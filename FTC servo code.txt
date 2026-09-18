@@ -1,0 +1,113 @@
+import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.Servo;
+
+
+
+
+
+//put this in a new servo class... might be errors coded ts on 45 mins of sleep bruh 
+
+
+
+
+@TeleOp(name="TeleOp_Main", group="Linear OpMode")
+public class TeleOpMain extends LinearOpMode {
+
+    // Hardware Declarations
+    private DcMotor frontLeft, backLeft, frontRight, backRight;
+    private DcMotor intakeMotor;
+    private Servo servo1, servo2;
+
+    // Toggle Tracking Variables
+    private boolean intakeOn = false;
+    private boolean lastAState = false;
+
+    private boolean servosOn = false;
+    private boolean lastBState = false;
+
+    // Servo Positions (Adjust these values to match your physical build!)
+    private final double SERVO_OFF_POS = 0.0;
+    private final double SERVO_ON_POS = 1.0;
+
+    @Override
+    public void runOpMode() {
+
+        // Hardware Mapping
+        frontLeft = hardwareMap.get(DcMotor.class, "front_left");
+        backLeft = hardwareMap.get(DcMotor.class, "back_left");
+        frontRight = hardwareMap.get(DcMotor.class, "front_right");
+        backRight = hardwareMap.get(DcMotor.class, "back_right");
+
+        intakeMotor = hardwareMap.get(DcMotor.class, "intake");
+        servo1 = hardwareMap.get(DcMotor.class, "servo1") != null ? hardwareMap.get(Servo.class, "servo1") : hardwareMap.get(Servo.class, "servo1"); // Standard servo mapping
+        servo2 = hardwareMap.get(Servo.class, "servo2");
+
+        // Reverse left side motors so positive power drives forward
+        frontLeft.setDirection(DcMotor.Direction.REVERSE);
+        backLeft.setDirection(DcMotor.Direction.REVERSE);
+        frontRight.setDirection(DcMotor.Direction.FORWARD);
+        backRight.setDirection(DcMotor.Direction.FORWARD);
+
+        waitForStart();
+
+        while (opModeIsActive()) {
+
+            // -------------------------------------------------------------
+            // 1. STRAFE / DRIVE LOGIC (Left Joystick Only)
+            // -------------------------------------------------------------
+            // Note: Gamepad Y-axis is inverted in FTC (-1 is UP, +1 is DOWN)
+            double y = -gamepad1.left_stick_y; 
+            double x = gamepad1.left_stick_x;  
+
+            // Calculate Mecanum powers for translation (Up, Down, Left, Right)
+            double flPower = y + x;
+            double blPower = y - x;
+            double frPower = y - x;
+            double brPower = y + x;
+
+            // Normalize powers if stick magnitude exceeds 1.0
+            double max = Math.max(Math.abs(flPower), Math.max(Math.abs(blPower), 
+                         Math.max(Math.abs(frPower), Math.abs(brPower))));
+            if (max > 1.0) {
+                flPower /= max;
+                blPower /= max;
+                frPower /= max;
+                brPower /= max;
+            }
+
+            frontLeft.setPower(flPower);
+            backLeft.setPower(blPower);
+            frontRight.setPower(frPower);
+            backRight.setPower(brPower);
+
+            // -------------------------------------------------------------
+            // 2. INTAKE MOTOR TOGGLE (Button A)
+            // -------------------------------------------------------------
+            boolean currentAState = gamepad1.a;
+            // Rising edge detection (triggers only once when pressed down)
+            if (currentAState && !lastAState) {
+                intakeOn = !intakeOn; // Toggle boolean state
+            }
+            lastAState = currentAState;
+
+            // Set motor power based on toggle state
+            intakeMotor.setPower(intakeOn ? 1.0 : 0.0);
+
+            // -------------------------------------------------------------
+            // 3. BOTH SERVOS TOGGLE (Button B)
+            // -------------------------------------------------------------
+            boolean currentBState = gamepad1.b;
+            if (currentBState && !lastBState) {
+                servosOn = !servosOn; // Toggle boolean state
+            }
+            lastBState = currentBState;
+
+            // Set servo positions based on toggle state
+            double targetPos = servosOn ? SERVO_ON_POS : SERVO_OFF_POS;
+            servo1.setPosition(targetPos);
+            servo2.setPosition(targetPos);
+        }
+    }
+}
