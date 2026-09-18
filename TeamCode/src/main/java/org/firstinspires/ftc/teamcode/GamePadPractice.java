@@ -1,12 +1,10 @@
 package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
-
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 
 @TeleOp
-
 public class GamePadPractice extends OpMode {
 
     // Declare motors
@@ -16,6 +14,7 @@ public class GamePadPractice extends OpMode {
     DcMotor backRightMotor;
     DcMotor intakeMotor;
 
+<<<<<<< HEAD
     boolean previousA = false;
     boolean intakeOn = false;
 
@@ -34,6 +33,19 @@ public class GamePadPractice extends OpMode {
     public void loop () {
 
         // print gamepad data to driver hub screen
+=======
+    @Override
+    public void init() {
+        frontLeftMotor = hardwareMap.get(DcMotor.class, "motor_front_left");
+        frontRightMotor = hardwareMap.get(DcMotor.class, "motor_front_right");
+        backLeftMotor = hardwareMap.get(DcMotor.class, "motor_back_left");
+        backRightMotor = hardwareMap.get(DcMotor.class, "motor_back_right");
+        intakeMotor = hardwareMap.get(DcMotor.class, "motor_intake");
+    }
+
+    @Override
+    public void loop() {
+>>>>>>> 72b7b31 (Abhi's code fixed)
         telemetry.addData("y", gamepad1.left_stick_y);
         telemetry.addData("x", gamepad1.left_stick_x);
         telemetry.addData("a", gamepad1.a);
@@ -50,10 +62,11 @@ public class GamePadPractice extends OpMode {
 
         // set robot power using power variables from above
         frontLeftMotor.setPower(frontLeftPower);
-        frontRightMotor.setPower(frontLeftPower);
-        backLeftMotor.setPower(frontLeftPower);
-        backRightMotor.setPower(frontLeftPower);
+        frontRightMotor.setPower(frontRightPower);
+        backLeftMotor.setPower(backLeftPower);
+        backRightMotor.setPower(backRightPower);
 
+<<<<<<< HEAD
         // make a toggle intake motor
         boolean currentA = gamepad1.a;
 
@@ -69,5 +82,12 @@ public class GamePadPractice extends OpMode {
 
         previousA = currentA;
 
+=======
+        if (gamepad1.a) {
+            intakeMotor.setPower(1);
+        } else {
+            intakeMotor.setPower(0);
+        }
+>>>>>>> 72b7b31 (Abhi's code fixed)
     }
 }
