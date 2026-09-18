@@ -1,0 +1,54 @@
+package org.firstinspires.ftc.teamcode.mechanism;
+
+import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.DcMotor;
+
+@TeleOp(name = "Mecanum Strafe TeleOp", group = "TeleOp")
+public class Strafing extends LinearOpMode {
+
+    private DcMotor frontLeft, frontRight, backLeft, backRight;
+
+    @Override
+    public void runOpMode() {
+        // These names must match exactly what you named the motors
+        // in the Driver Station's robot configuration.
+        frontLeft = hardwareMap.get(DcMotor.class, "front_left");
+        frontRight = hardwareMap.get(DcMotor.class, "front_right");
+        backLeft = hardwareMap.get(DcMotor.class, "back_left");
+        backRight = hardwareMap.get(DcMotor.class, "back_right");
+
+        // Right-side motors are physically mounted facing the opposite way,
+        // so reverse them or the robot will spin instead of drive straight.
+        frontRight.setDirection(DcMotor.Direction.REVERSE);
+        backRight.setDirection(DcMotor.Direction.REVERSE);
+
+        waitForStart();
+
+        while (opModeIsActive()) {
+            double y = -gamepad1.left_stick_y;        // forward / back
+            double x = gamepad1.left_stick_x * 1.1;    // strafe left / right
+            // (1.1 corrects for mecanum
+            // wheels being weaker strafing
+            // than driving straight)
+            double rx = gamepad1.right_stick_x;        // rotate
+
+            // Normalize so no motor is asked for more than full power
+            double denominator = Math.max(Math.abs(y) + Math.abs(x) + Math.abs(rx), 1);
+            double frontLeftPower = (y + x + rx) / denominator;
+            double backLeftPower = (y - x + rx) / denominator;
+            double frontRightPower = (y - x - rx) / denominator;
+            double backRightPower = (y + x - rx) / denominator;
+
+            frontLeft.setPower(frontLeftPower);
+            backLeft.setPower(backLeftPower);
+            frontRight.setPower(frontRightPower);
+            backRight.setPower(backRightPower);
+
+            telemetry.addData("Forward (y)", y);
+            telemetry.addData("Strafe (x)", x);
+            telemetry.addData("Rotate (rx)", rx);
+            telemetry.update();
+        }
+    }
+}
