@@ -1,0 +1,118 @@
+/**
+ * Author: Robert Pinta
+ * Date: 02/07/2024
+ * These are the notes for Unit 1 Project Day 2
+ * Notes on Custom Colors, Polygons, and text
+ */
+import java.awt.*;
+import javax.swing.JFrame;
+import javax.swing.JPanel;
+
+public class J1Proj_D02_Notes {
+    class DrawPanel extends JPanel {
+        public void paintComponent(Graphics g) {
+            Graphics2D g2d = (Graphics2D) g.create();
+            //Custom Colors and fonts go here
+            Color purple = new Color(150, 18, 227);
+            Font titleFont = new Font("Helvetica", Font.BOLD, 20);
+            
+            
+            //************DRAWING CODE STARTS HERE*********************
+            
+            g2d.setColor(purple);
+            g2d.fillRect(50,50,50,50);
+            
+            Polygon rect = new Polygon();
+            
+            rect.addPoint(100, 100);
+            rect.addPoint(100, 600);
+            rect.addPoint(700, 600);
+            rect.addPoint(700, 100);
+            
+            g2d.setColor(Color.white);
+            g2d. fillPolygon(rect);
+            
+            g2d.setColor(Color.black);
+            g2d.setFont(titleFont);
+            
+            g2d.setStroke(new BasicStroke(8));
+            g2d.drawLine(300,100,300,400);
+            g2d.drawLine(100,400,700,400);
+            g2d.drawLine(500,100,500,400);
+            g2d.drawLine(420,400,420,600);
+            
+            Font xbox = new Font("Monospaced-bold", Font.PLAIN, 40);
+            g2d.setFont(xbox);
+            g2d.drawString("XBOX", 140, 380);
+            
+            Font nature = new Font("Serif", Font.PLAIN, 40);
+            g2d.setFont(nature);
+            g2d.drawString("NATURE", 315, 380);
+            
+            Font music = new Font("SansSerif", Font.PLAIN, 40);
+            g2d.setFont(nature);
+            g2d.drawString("MUSIC", 520, 380);
+            
+            
+        
+                
+            
+            //************DRAWING CODE STOPS HERE*********************
+            //This draws the grid so we can see a little better,
+            //we'll comment this out later. Just ignore it for now.
+            drawGrid(g2d);
+        }
+        
+        /*********************************************************
+         ********* DO NOT TOUCH ANYTHING BELOW HERE!!! ***********
+         *********************************************************/
+        
+        public void drawGrid(Graphics2D g2d)
+        {
+            g2d.setStroke(new BasicStroke(1));
+            Font gridFont = new Font("Helvetica", Font.PLAIN, 10);
+            g2d.setFont(gridFont);
+            g2d.setColor(new Color(75,75,75));
+            for (int x = 0; x<=800; x+= 20)
+            {
+                g2d.setColor(new Color(75,75,75));
+                g2d.drawLine(x, 0, x, 600); 
+                g2d.rotate(Math.toRadians(90),x,0);
+                g2d.setColor(new Color(175,175,175));
+                g2d.drawString(""+x,x,-1);
+                g2d.rotate(Math.toRadians(-90),x,0);
+            }
+            for (int y = 0; y<=600; y+= 20)
+            {
+                g2d.setColor(new Color(75,75,75));
+                g2d.drawLine(0,y,800,y); 
+                g2d.setColor(new Color(175,175,175));
+                g2d.drawString(""+y,1,y-1);
+            }
+            g2d.setColor(new Color(175,175,175));
+            for (int x = 0; x<=800; x+= 100)
+                g2d.drawLine(x, 0, x, 600);
+            for (int y = 0; y<=600; y+= 100)
+                g2d.drawLine(0, y, 800, y); 
+        }
+    }
+    
+    JFrame frame;
+    DrawPanel drawPanel;
+    public static void main(String... args) {
+        new J1Proj_D02_Notes().go();
+    }
+    private void go() {
+        frame = new JFrame("J1Proj_D02 Notes");
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setPreferredSize(new Dimension(805, 630));
+        frame.setBackground(Color.BLACK);
+        frame.pack();
+        drawPanel = new DrawPanel();
+        frame.getContentPane().add(BorderLayout.CENTER, drawPanel);
+        frame.setResizable(true);
+        frame.setLocationByPlatform(true);
+        frame.setLocation(0,0);
+        frame.setVisible(true);
+    }
+}
