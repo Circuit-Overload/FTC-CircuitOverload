@@ -57,6 +57,7 @@ public class abhiCode extends LinearOpMode {
             double left_x = gamepad1.left_stick_x;
             // double right_y = -gamepad1.right_stick_y;
             double right_x = gamepad1.right_stick_x;
+            double rt_down = gamepad1.right_trigger;
 
             // add deadzone to robot
             if (abs(left_y) <= 0.05) {
@@ -71,6 +72,7 @@ public class abhiCode extends LinearOpMode {
                 right_x = 0;
             }
 
+
             // Calculate Mecanum powers for translation (Up, Down, Left, Right)
             double flPower = left_y + left_x + right_x;
             double blPower = left_y - left_x + right_x;
@@ -78,19 +80,20 @@ public class abhiCode extends LinearOpMode {
             double brPower = left_y + left_x - right_x;
 
             // Normalize powers if stick magnitude exceeds 1.0
-            double max = Math.max(abs(flPower), Math.max(abs(blPower),
-                    Math.max(abs(frPower), abs(brPower))));
-            if (max > 1.0) {
-                flPower /= max;
-                blPower /= max;
-                frPower /= max;
-                brPower /= max;
-            }
+            double max = Math.max(1.0,
+                    Math.max(abs(flPower), Math.max(abs(blPower),
+                    Math.max(abs(frPower), abs(brPower)))));
+            flPower /= max;
+            blPower /= max;
+            frPower /= max;
+            brPower /= max;
 
-            motor_front_left.setPower(flPower);
-            motor_back_left.setPower(blPower);
-            motor_front_right.setPower(frPower);
-            motor_back_right.setPower(brPower);
+            double acceleration = 0.75 + (gamepad1.right_trigger * 0.25);
+
+            motor_front_left.setPower(flPower * acceleration);
+            motor_back_left.setPower(blPower * acceleration);
+            motor_front_right.setPower(frPower * acceleration);
+            motor_back_right.setPower(brPower * acceleration);
 
             // -------------------------------------------------------------
             // 2. INTAKE MOTOR TOGGLE (Button A)
