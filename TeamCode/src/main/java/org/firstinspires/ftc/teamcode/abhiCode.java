@@ -1,9 +1,10 @@
 package org.firstinspires.ftc.teamcode;
 
+import static java.lang.Math.abs;
+
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.Servo;
 
 @TeleOp(name="TeleOp_Main", group="Linear OpMode")
@@ -52,18 +53,33 @@ public class abhiCode extends LinearOpMode {
             // 1. STRAFE / DRIVE LOGIC (Left Joystick Only)
             // -------------------------------------------------------------
             // Note: Gamepad Y-axis is inverted in FTC (-1 is UP, +1 is DOWN)
-            double y = -gamepad1.left_stick_y;
-            double x = gamepad1.left_stick_x;
+            double left_y = -gamepad1.left_stick_y;
+            double left_x = gamepad1.left_stick_x;
+            // double right_y = -gamepad1.right_stick_y;
+            double right_x = gamepad1.right_stick_x;
+
+            // add deadzone to robot
+            if (abs(left_y) <= 0.05) {
+                left_y = 0;
+            }
+
+            if (abs(left_x) <= 0.05) {
+                left_x = 0;
+            }
+
+            if (abs(right_x) <= 0.05) {
+                right_x = 0;
+            }
 
             // Calculate Mecanum powers for translation (Up, Down, Left, Right)
-            double flPower = y + x;
-            double blPower = y - x;
-            double frPower = y - x;
-            double brPower = y + x;
+            double flPower = left_y + left_x + right_x;
+            double blPower = left_y - left_x + right_x;
+            double frPower = left_y - left_x - right_x;
+            double brPower = left_y + left_x - right_x;
 
             // Normalize powers if stick magnitude exceeds 1.0
-            double max = Math.max(Math.abs(flPower), Math.max(Math.abs(blPower),
-                    Math.max(Math.abs(frPower), Math.abs(brPower))));
+            double max = Math.max(abs(flPower), Math.max(abs(blPower),
+                    Math.max(abs(frPower), abs(brPower))));
             if (max > 1.0) {
                 flPower /= max;
                 blPower /= max;
