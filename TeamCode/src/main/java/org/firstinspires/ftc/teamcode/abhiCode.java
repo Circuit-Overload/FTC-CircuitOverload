@@ -15,6 +15,13 @@ public class abhiCode extends LinearOpMode {
     private DcMotor motor_intake;
     private Servo servo_intake_right, servo_intake_left;
 
+
+
+    //Turning
+    //
+
+
+
     // Toggle Tracking Variables
     private boolean intakeOn = false;
     private boolean lastAState = false;
@@ -59,7 +66,7 @@ public class abhiCode extends LinearOpMode {
             double right_x = gamepad1.right_stick_x;
             double rt_down = gamepad1.right_trigger;
 
-            // add deadzone to robot
+            // add deadzone to robot  // discuss if deadzone is needed.
             if (abs(left_y) <= 0.05) {
                 left_y = 0;
             }
