@@ -1,4 +1,4 @@
-package org.firstinspires.ftc.teamcode;
+                                                                                                  package org.firstinspires.ftc.teamcode;
 
 import static java.lang.Math.abs;
 
@@ -89,7 +89,7 @@ public class abhiCode extends LinearOpMode {
             // Normalize powers if stick magnitude exceeds 1.0
             double max = Math.max(1.0,
                     Math.max(abs(flPower), Math.max(abs(blPower),
-                    Math.max(abs(frPower), abs(brPower)))));
+                            Math.max(abs(frPower), abs(brPower)))));
             flPower /= max;
             blPower /= max;
             frPower /= max;

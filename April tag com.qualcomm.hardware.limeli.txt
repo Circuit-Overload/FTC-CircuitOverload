@@ -1,0 +1,368 @@
+import com.qualcomm.hardware.limelightvision.Limelight3A;
+import com.qualcomm.hardware.limelightvision.LLResult;
+import com.qualcomm.hardware.limelightvision.LLResultTypes.ColorResult;
+import com.qualcomm.hardware.limelightvision.LLResultTypes.FiducialResult;
+import com.qualcomm.hardware.limelightvision.LLStatus;
+import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+
+import java.util.List;
+
+
+
+
+
+package org.firstinspires.ftc.teamcode;
+
+import com.qualcomm.hardware.limelightvision.LLResult;
+import com.qualcomm.hardware.limelightvision.LLResultTypes.ColorResult;
+import com.qualcomm.hardware.limelightvision.LLResultTypes.FiducialResult;
+import com.qualcomm.hardware.limelightvision.Limelight3A;
+import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.util.ElapsedTime;
+import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
+
+import java.util.List;
+
+@TeleOp(name = "Limelight 3A Master Suite (AprilTag & Color Blob)", group = "Competition Vision")
+public class LimelightMasterSuiteOpMode extends LinearOpMode {
+
+    // --- Hardware Subsystems ---
+    private Limelight3A limelight;
+    private DcMotor leftFront, rightFront, leftBack, rightBack;
+
+    // --- PID / Proportional Gain Constants ---
+    private static final double TURN_P = 0.032;      
+    private static final double STRAFE_P = 0.028;    
+    private static final double DRIVE_P = 0.038;     
+    
+    // --- Target Metrics & Tolerances ---
+    private static final double DESIRED_DISTANCE_METERS = 0.40; 
+    private static final double MIN_MOTOR_POWER = 0.07;         
+    private static final double ALLOWED_ANGLE_ERROR = 1.2;      
+    private static final double ALLOWED_DIST_ERROR = 0.015;     
+
+    // --- Operational Pipeline Configuration Indexing ---
+    private static final int PIPELINE_APRILTAG = 0;
+    private static final int PIPELINE_COLOR_BLOB = 1;
+    
+    private int activePipeline = PIPELINE_APRILTAG;
+    private int targetedTagId = -1; // -1 = Track any available tag
+
+    // --- State Machine Enumeration ---
+    private enum VisionOpState {
+        IDLE_SEARCHING,
+        TARGET_ACQUIRED,
+        ALIGNING_POSITION,
+        TARGET_LOCKED
+    }
+
+    private VisionOpState systemState = VisionOpState.IDLE_SEARCHING;
+    private final ElapsedTime stateClocks = new ElapsedTime();
+    private final ElapsedTime pipelineSwitchTimer = new ElapsedTime();
+
+    @Override
+    public void runOpMode() throws InterruptedException {
+        // ====================================================================
+        // 1. HARDWARE MAPPING & SAFETY VALIDATION
+        // ====================================================================
+        telemetry.setMsTransmissionInterval(20);
+        telemetry.addLine("Initializing Master Limelight 3A Hardware Map...");
+        telemetry.update();
+
+        try {
+            limelight = hardwareMap.get(Limelight3A.class, "limelight");
+            
+            leftFront  = hardwareMap.get(DcMotor.class, "leftFront");
+            rightFront = hardwareMap.get(DcMotor.class, "rightFront");
+            leftBack   = hardwareMap.get(DcMotor.class, "leftBack");
+            rightBack  = hardwareMap.get(DcMotor.class, "rightBack");
+        } catch (Exception runtimeEx) {
+            telemetry.addLine("FATAL: Hardware map mapping configuration failure!");
+            telemetry.update();
+            throw new RuntimeException("Unresolved Hardware Mapping: " + runtimeEx.getMessage());
+        }
+
+        // Motor Direction Declarations (Standard Mecanum layout)
+        leftFront.setDirection(DcMotorSimple.Direction.REVERSE);
+        leftBack.setDirection(DcMotorSimple.Direction.REVERSE);
+        rightFront.setDirection(DcMotorSimple.Direction.FORWARD);
+        rightBack.setDirection(DcMotorSimple.Direction.FORWARD);
+
+        configureMotorBrakeBehaviors(DcMotor.ZeroPowerBehavior.BRAKE);
+        resetEncoders();
+
+        // Initialize Limelight Hardware Interface
+        limelight.setPollRateHz(100);
+        limelight.start();
+        limelight.pipelineSwitch(activePipeline);
+        pipelineSwitchTimer.reset();
+
+        telemetry.clearAll();
+        telemetry.addLine("======================================================");
+        telemetry.addLine("  LIMELIGHT 3A MASTER SUITE INITIALIZED & READY       ");
+        telemetry.addLine("  Controls: D-Pad Up/Down (Pipeline), X/Y/B (Tag ID)  ");
+        telemetry.addLine("======================================================");
+        telemetry.update();
+
+        waitForStart();
+        stateClocks.reset();
+
+        // ====================================================================
+        // 2. MAIN TELEOPERATION & VISION EXECUTION LOOP
+        // ====================================================================
+        while (opModeIsActive()) {
+
+            // --- A. Process Driver Controls & Overrides ---
+            processDriverInputs();
+
+            // --- B. Pull Vision Data Payload ---
+            LLResult result = limelight.getLatestResult();
+
+            boolean targetFound = false;
+            double manualDrive   = -gamepad1.left_stick_y;
+            double manualStrafe  =  gamepad1.left_stick_x;
+            double manualTurn    =  gamepad1.right_stick_x;
+
+            double finalDrivePower  = manualDrive;
+            double finalStrafePower = manualStrafe;
+            double finalTurnPower   = manualTurn;
+
+            // Tracking Diagnostic Variables
+            double primaryTx = 0.0;
+            double primaryTy = 0.0;
+            double primaryArea = 0.0;
+            double depthZ = 0.0;
+            double lateralX = 0.0;
+            int identifiedTagId = -1;
+
+            if (result != null && result.isValid()) {
+
+                // Handle pipelines based on active switching modes
+                if (activePipeline == PIPELINE_APRILTAG) {
+                    
+                    // -------------------------------------------------------------
+                    // 1. GLOBAL FIELD LOCALIZATION (MegaTag2 / BotPose)
+                    // -------------------------------------------------------------
+                    Pose3D robotFieldPose = result.getBotpose();
+                    if (robotFieldPose != null) {
+                        telemetry.addLine("========== FIELD LOCALIZATION (MEGATAG2) ==========");
+                        telemetry.addData("Field Global X", "%.3f m", robotFieldPose.getPosition().x);
+                        telemetry.addData("Field Global Y", "%.3f m", robotFieldPose.getPosition().y);
+                        telemetry.addData("Robot Heading Yaw", "%.2f °", robotFieldPose.getOrientation().getYaw());
+                    }
+
+                    // -------------------------------------------------------------
+                    // 2. APRILTAG (FIDUCIAL) TARGET ARRAY EVALUATION
+                    // -------------------------------------------------------------
+                    List<FiducialResult> fiducialList = result.getFiducialResults();
+
+                    if (fiducialList != null && !fiducialList.isEmpty()) {
+                        FiducialResult targetTag = null;
+
+                        // Selection logic based on ID filters
+                        if (targetedTagId == -1) {
+                            targetTag = fiducialList.get(0);
+                        } else {
+                            for (FiducialResult tag : fiducialList) {
+                                if (tag.getFiducialId() == targetedTagId) {
+                                    targetTag = tag;
+                                    break;
+                                }
+                            }
+                            if (targetTag == null) {
+                                targetTag = fiducialList.get(0); // Fallback
+                            }
+                        }
+
+                        if (targetTag != null) {
+                            targetFound = true;
+                            identifiedTagId = targetTag.getFiducialId();
+                            primaryTx = targetTag.getTargetXDegrees();
+                            primaryTy = targetTag.getTargetYDegrees();
+                            primaryArea = targetTag.getTargetArea();
+
+                            Pose3D relativePose = targetTag.getRobotPoseTargetSpace();
+                            if (relativePose != null) {
+                                lateralX = relativePose.getPosition().x;
+                                depthZ = relativePose.getPosition().z;
+                            }
+
+                            updateSystemState(primaryTx, depthZ);
+                        }
+                    } else {
+                        systemState = VisionOpState.IDLE_SEARCHING;
+                    }
+
+                } else if (activePipeline == PIPELINE_COLOR_BLOB) {
+                    
+                    // -------------------------------------------------------------
+                    // 3. COLOR BLOB TARGET EVALUATION (e.g., Game Elements)
+                    // -------------------------------------------------------------
+                    List<ColorResult> colorList = result.getColorResults();
+
+                    if (colorList != null && !colorList.isEmpty()) {
+                        ColorResult primaryBlob = colorList.get(0); // Largest blob prioritized
+                        
+                        if (primaryBlob != null) {
+                            targetFound = true;
+                            primaryTx = primaryBlob.getTargetXDegrees();
+                            primaryTy = primaryBlob.getTargetYDegrees();
+                            primaryArea = primaryBlob.getTargetArea();
+
+                            systemState = VisionOpState.TARGET_ACQUIRED;
+                        }
+                    } else {
+                        systemState = VisionOpState.IDLE_SEARCHING;
+                    }
+                }
+
+                // Pipeline Performance Diagnostic Reporting
+                telemetry.addLine("\n---------- CAMERA PIPELINE LATENCY ----------");
+                telemetry.addData("Capture Latency", "%.1f ms", result.getCaptureLatency());
+                telemetry.addData("Parse Latency", "%.1f ms", result.getParseLatency());
+
+            } else {
+                systemState = VisionOpState.IDLE_SEARCHING;
+                telemetry.addLine("---------- VISION STATUS ----------");
+                telemetry.addData("Status", "NO VALID TARGET DATA PACKET RECEIVED");
+            }
+
+            // --- C. Automated P-Loop Correction Calculations ---
+            // Triggered when driver holds down the Left Bumper
+            if (gamepad1.left_bumper && targetFound) {
+                systemState = VisionOpState.ALIGNING_POSITION;
+
+                double turnCorrection = primaryTx * TURN_P;
+                double strafeCorrection = lateralX * STRAFE_P;
+                
+                double distanceError = depthZ - DESIRED_DISTANCE_METERS;
+                double driveCorrection = distanceError * DRIVE_P;
+
+                // Overcome static motor friction thresholds
+                if (Math.abs(driveCorrection) > 0.005 && Math.abs(driveCorrection) < MIN_MOTOR_POWER) {
+                    driveCorrection = Math.signum(driveCorrection) * MIN_MOTOR_POWER;
+                }
+                if (Math.abs(turnCorrection) > 0.005 && Math.abs(turnCorrection) < MIN_MOTOR_POWER) {
+                    turnCorrection = Math.signum(turnCorrection) * MIN_MOTOR_POWER;
+                }
+
+                finalDrivePower = driveCorrection;
+                finalStrafePower = strafeCorrection;
+                finalTurnPower = turnCorrection;
+
+                telemetry.addLine("\n*** CLOSED-LOOP AUTOMATED ALIGNMENT ENGAGED ***");
+            }
+
+            // --- D. Execute Kinematic Drivetrain Power Distribution ---
+            driveMecanum(finalDrivePower, finalStrafePower, finalTurnPower);
+
+            // --- E. Comprehensive Live Telemetry Teletype ---
+            telemetry.addLine("\n---------- RUNTIME SYSTEM METRICS ----------");
+            telemetry.addData("System State Machine", systemState.toString());
+            telemetry.addData("Active Pipeline Index", activePipeline == PIPELINE_APRILTAG ? "0 (AprilTag)" : "1 (Color Blob)");
+            telemetry.addData("Target Filter ID", targetedTagId == -1 ? "ANY" : String.valueOf(targetedTagId));
+            telemetry.addData("Active Target ID", identifiedTagId == -1 ? "N/A" : String.valueOf(identifiedTagId));
+            telemetry.addData("Target Offset X (tx)", "%.2f °", primaryTx);
+            telemetry.addData("Target Offset Y (ty)", "%.2f °", primaryTy);
+            telemetry.addData("Target Coverage Area", "%.2f %%", primaryArea);
+            if (activePipeline == PIPELINE_APRILTAG) {
+                telemetry.addData("Relative Depth Z", "%.2f m", depthZ);
+                telemetry.addData("Relative Lateral X", "%.2f m", lateralX);
+            }
+            telemetry.update();
+        }
+
+        // Clean termination sequence
+        limelight.stop();
+    }
+
+    /**
+     * Dynamically processes human driver commands for pipeline selection and target filters.
+     */
+    private void processDriverInputs() {
+        // Debounce protection for pipeline switching
+        if (pipelineSwitchTimer.seconds() > 0.4) {
+            if (gamepad1.dpad_up && activePipeline != PIPELINE_APRILTAG) {
+                activePipeline = PIPELINE_APRILTAG;
+                limelight.pipelineSwitch(activePipeline);
+                pipelineSwitchTimer.reset();
+            } else if (gamepad1.dpad_down && activePipeline != PIPELINE_COLOR_BLOB) {
+                activePipeline = PIPELINE_COLOR_BLOB;
+                limelight.pipelineSwitch(activePipeline);
+                pipelineSwitchTimer.reset();
+            }
+        }
+
+        // Target Tag ID configuration bindings via gamepad interface
+        if (gamepad1.x) {
+            targetedTagId = 1; // Example target: Tag 1
+        } else if (gamepad1.y) {
+            targetedTagId = 2; // Example target: Tag 2
+        } else if (gamepad1.b) {
+            targetedTagId = -1; // Reset filter to track any valid tag
+        }
+    }
+
+    /**
+     * Updates system state flags depending on alignment error thresholds.
+     */
+    private void updateSystemState(double angleError, double depthError) {
+        if (Math.abs(angleError) < ALLOWED_ANGLE_ERROR && Math.abs(depthError - DESIRED_DISTANCE_METERS) < ALLOWED_DIST_ERROR) {
+            systemState = VisionOpState.TARGET_LOCKED;
+        } else if (Math.abs(angleError) < 4.0) {
+            systemState = VisionOpState.ALIGNING_POSITION;
+        } else {
+            systemState = VisionOpState.TARGET_ACQUIRED;
+        }
+    }
+
+    /**
+     * Standard Mecanum Wheel Kinematics calculation with structural vector scaling.
+     */
+    private void driveMecanum(double drive, double strafe, double turn) {
+        double leftFrontPower  = drive + strafe + turn;
+        double rightFrontPower = drive - strafe - turn;
+        double leftBackPower   = drive - strafe + turn;
+        double rightBackPower  = drive + strafe - turn;
+
+        // Peak magnitude normalization to avoid exceeding [-1.0, 1.0] motor power bounds
+        double peakMagnitude = Math.max(Math.abs(leftFrontPower), Math.abs(rightFrontPower));
+        peakMagnitude = Math.max(peakMagnitude, Math.abs(leftBackPower));
+        peakMagnitude = Math.max(peakMagnitude, Math.abs(rightBackPower));
+
+        if (peakMagnitude > 1.0) {
+            leftFrontPower  /= peakMagnitude;
+            rightFrontPower /= peakMagnitude;
+            leftBackPower   /= peakMagnitude;
+            rightBackPower  /= peakMagnitude;
+        }
+
+        leftFront.setPower(leftFrontPower);
+        rightFront.setPower(rightFrontPower);
+        leftBack.setPower(leftBackPower);
+        rightBack.setPower(rightBackPower);
+    }
+
+    private void configureMotorBrakeBehaviors(DcMotor.ZeroPowerBehavior behavior) {
+        leftFront.setZeroPowerBehavior(behavior);
+        rightFront.setZeroPowerBehavior(behavior);
+        leftBack.setZeroPowerBehavior(behavior);
+        rightBack.setZeroPowerBehavior(behavior);
+    }
+
+    private void resetEncoders() {
+        leftFront.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        rightFront.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        leftBack.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        rightBack.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+
+        leftFront.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        rightFront.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        leftBack.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        rightBack.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+    }
+}
