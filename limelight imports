@@ -1,0 +1,16 @@
+//github imports for limelight 
+
+//grab this code rudra and commit it into github
+
+//this will make the color blob detection available on java 17 code so we can then use //conditionals to program the purpose of the detection
+
+
+
+import com.qualcomm.hardware.limelightvision.LLResult;
+import com.qualcomm.hardware.limelightvision.LLResultTypes;
+import com.qualcomm.hardware.limelightvision.LLStatus;
+import com.qualcomm.hardware.limelightvision.Limelight3A;
+import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
+import java.util.List;
