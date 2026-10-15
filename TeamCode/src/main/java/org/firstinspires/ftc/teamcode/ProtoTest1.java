@@ -8,7 +8,7 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.Servo;
 
 @TeleOp(name="TeleOp_Main", group="Linear OpMode")
-public class abhiCode extends LinearOpMode {
+public class ProtoTest1 extends LinearOpMode {
 
     // Hardware Declarations
     private DcMotor motor_front_left, motor_front_right, motor_back_left, motor_back_right;
@@ -106,7 +106,7 @@ public class abhiCode extends LinearOpMode {
             lastAState = currentAState;
 
             // Set motor power based on toggle state
-            motor_intake.setPower(intakeOn ? 1.0 : 0.0);
+            motor_intake.setPower(intakeOn ? -100.0 : 0.0);
 
             // -------------------------------------------------------------
             // 3. BOTH SERVOS TOGGLE (Button B)
