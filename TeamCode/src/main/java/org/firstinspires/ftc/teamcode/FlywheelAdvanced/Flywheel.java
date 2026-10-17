@@ -6,6 +6,8 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 
 public class Flywheel {
 
+    // https://youtu.be/KVPdbWcAyUY
+
     private DcMotorEx m1;
 
     private double encoderCPM = 28.0;
