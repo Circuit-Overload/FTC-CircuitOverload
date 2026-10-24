@@ -1,0 +1,44 @@
+
+
+package org.firstinspires.ftc.teamcode;
+
+import static org.firstinspires.ftc.robotcore.external.BlocksOpModeCompanion.hardwareMap;
+
+import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.hardware.HardwareMap;
+import com.qualcomm.robotcore.hardware.Servo;
+
+public class Servos {
+    private Servo servoLeft;
+    private Servo servoRight;
+
+    //Servo work
+
+    public void init(HardwareMap hwMap) {
+        servoLeft = hardwareMap.get(Servo.class, "servo_left");
+        servoRight = hardwareMap.get(Servo.class, "servo_right");
+
+    }
+
+    public void setServoRight(double angle) {
+        servoRight.setPosition(angle);
+    }
+
+    public void setServoLeft(double angle) {
+        servoLeft.setPosition(angle);
+    }
+}
+
+    /* public void init() {
+
+
+        DcMotor intakeMotor;
+        private Servo servoPos;
+
+        public void setServoLeft(double power)
+        {
+ }
+ }
+
+     */
