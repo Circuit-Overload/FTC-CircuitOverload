@@ -1,0 +1,146 @@
+package org.firstinspires.ftc.teamcode;
+
+import static java.lang.Math.abs;
+
+import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.hardware.limelightvision.Limelight3A;
+import com.qualcomm.hardware.limelightvision.LLResult;
+import com.qualcomm.robotcore.util.ElapsedTime;
+
+@Autonomous(name="Auto_BlobTest", group="Autonomous")
+public class AutonomousBlobTest extends LinearOpMode {
+
+    // Hardware Declarations
+    private DcMotor motor_front_left, motor_front_right, motor_back_left, motor_back_right;
+    private DcMotor motor_intake;
+    private DcMotor motor_shooter;
+    private Servo servo_intake;
+    private Limelight3A limelight;
+
+    // Servo position constant
+    private static final double SERVO_DOWN_POS = 90.0 / 300.0;
+    
+    // Safety timer
+    private ElapsedTime runtime = new ElapsedTime();
+
+    @Override
+    public void runOpMode() {
+
+        // Hardware Mapping
+        motor_front_left = hardwareMap.get(DcMotor.class, "motor_front_left");
+        motor_back_left = hardwareMap.get(DcMotor.class, "motor_back_left");
+        motor_front_right = hardwareMap.get(DcMotor.class, "motor_front_right");
+        motor_back_right = hardwareMap.get(DcMotor.class, "motor_back_right");
+
+        motor_intake = hardwareMap.get(DcMotor.class, "motor_intake");
+        motor_shooter = hardwareMap.get(DcMotor.class, "motor_shooter");
+        servo_intake = hardwareMap.get(Servo.class, "servo_intake");
+        limelight = hardwareMap.get(Limelight3A.class, "limelight");
+
+        // Motor Directions
+        motor_front_left.setDirection(DcMotor.Direction.REVERSE);
+        motor_back_left.setDirection(DcMotor.Direction.REVERSE);
+        motor_front_right.setDirection(DcMotor.Direction.FORWARD);
+        motor_back_right.setDirection(DcMotor.Direction.FORWARD);
+
+        // Initialize Limelight
+        limelight.setPollRateHz(100);
+        limelight.start();
+        limelight.pipelineSwitch(0);
+
+        telemetry.addData("Status", "Ready for Autonomous Blob Test");
+        telemetry.update();
+
+        waitForStart();
+        runtime.reset();
+
+        // Drop intake servo down right away
+        servo_intake.setPosition(SERVO_DOWN_POS);
+
+        boolean targetReached = false;
+
+        // Run auto loop for up to 12 seconds
+        while (opModeIsActive() && runtime.seconds() < 12.0) {
+
+            LLResult result = limelight.getLatestResult();
+            boolean targetValid = false;
+            double tx = 0.0;
+            double ta = 0.0;
+
+            if (result != null && result.isValid()) {
+                targetValid = true;
+                tx = result.getTx();
+                ta = result.getTa();
+            }
+
+            double left_y = 0.0;
+            double right_x = 0.0;
+
+            if (targetValid) {
+                // 1. Proportional steering toward the largest blob center
+                double steerKp = 0.03;
+                right_x = tx * steerKp;
+
+                // 2. Drive forward based on size (`ta`). Stop when close enough.
+                double targetAreaStopThreshold = 15.0; // Tweak this for your grab distance
+                if (ta < targetAreaStopThreshold) {
+                    left_y = 0.35; // Approach speed
+                    motor_intake.setPower(0.667); // Run intake while moving in
+                } else {
+                    // Close enough! Stop moving, keep intake running to pull it in
+                    left_y = 0.0;
+                    right_x = 0.0;
+                    motor_intake.setPower(0.667);
+                    targetReached = true;
+                }
+            } else {
+                // Search Mode: If no blob is seen, spin slowly in place to scan
+                right_x = 0.25;
+                motor_intake.setPower(0.0);
+            }
+
+            // Mecanum Drive Power Calculation (Pure translation + rotation)
+            double flPower = left_y + right_x;
+            double blPower = left_y + right_x;
+            double frPower = left_y - right_x;
+            double brPower = left_y - right_x;
+
+            // Normalize powers
+            double max = Math.max(-1.0, Math.max(abs(flPower), Math.max(abs(blPower), Math.max(abs(frPower), abs(brPower)))));
+            if (max > 1.0) {
+                flPower /= max;
+                blPower /= max;
+                frPower /= max;
+                brPower /= max;
+            }
+
+            motor_front_left.setPower(flPower);
+            motor_back_left.setPower(blPower);
+            motor_front_right.setPower(frPower);
+            motor_back_right.setPower(brPower);
+
+            // Telemetry for debugging today
+            telemetry.addData("Target Found", targetValid);
+            telemetry.addData("Horizontal Offset (tx)", tx);
+            telemetry.addData("Target Area (ta)", ta);
+            telemetry.addData("Target Reached", targetReached);
+            telemetry.update();
+
+            // If we've successfully reached and intook the blob, pause briefly and exit
+            if (targetReached) {
+                sleep(1000); 
+                break;
+            }
+        }
+
+        // Stop all motors when autonomous ends
+        motor_front_left.setPower(0);
+        motor_back_left.setPower(0);
+        motor_front_right.setPower(0);
+        motor_back_right.setPower(0);
+        motor_intake.setPower(0);
+    }
+}
