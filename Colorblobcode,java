@@ -1,0 +1,168 @@
+// =========================================================================
+// LIMELIGHT BLOB DETECTION & AUTO-APPROACH LOGIC BLOCK
+// =========================================================================
+// Poll the latest frame data from the Limelight 3A
+LLResult result = limelight.getLatestResult();
+boolean targetValid = false;
+double tx = 0.0;
+double ta = 0.0;
+
+if (result != null && result.isValid()) {
+    targetValid = true;
+    tx = result.getTx();   // Horizontal offset from the largest blob center (-29.8 to 29.8°)
+    ta = result.getTa();   // Target area percentage (0 to 100) — represents distance
+}
+
+// Execute Auto-Approach & Intake when Left Bumper is held and a valid blob is detected
+if (gamepad1.left_bumper && targetValid) {
+    
+    // 1. Proportional (P) Steering Control
+    // Adjusts turning power dynamically based on how far off-center the largest blob is.
+    double steerKp = 0.03; 
+    right_x = tx * steerKp; 
+
+    // 2. Proportional Approach Control
+    // Smoothly drives forward toward the blob, scaling down speed as it gets closer.
+    double targetAreaStopThreshold = 15.0; // Tweak this: higher = gets closer before stopping
+    double maxApproachSpeed = 0.4;         // Maximum forward speed during auto-approach
+    
+    if (ta < targetAreaStopThreshold) {
+        // Slows down slightly as it approaches the target for a cleaner grab
+        double distanceError = targetAreaStopThreshold - ta;
+        left_y = Math.min(maxApproachSpeed, distanceError * 0.05); 
+    } else {
+        // Close enough to the pollen/nectar blob; stop driving forward
+        left_y = 0.0; 
+    }
+
+    // 3. Automated Intake Activation
+    // Forces the intake active while tracking and collecting the blob
+    intakeOn = true;
+}
+
+
+
+
+
+
+
+
+
+// Condiotonals    
+
+// =========================================================================
+// COMPREHENSIVE CONTROL & VISION LOOP LOGIC (Place inside while(opModeIsActive()))
+// =========================================================================
+
+// 1. LIMELIGHT DATA POLLING & VALIDATION CONDITIONAL
+LLResult result = limelight.getLatestResult();
+boolean targetValid = false;
+double tx = 0.0;
+double ty = 0.0;
+double ta = 0.0;
+
+if (result != null && result.isValid()) {
+    targetValid = true;
+    tx = result.getTx();   // Horizontal offset from the largest blob center (-29.8 to 29.8°)
+    ty = result.getTy();   // Vertical offset from the largest blob center
+    ta = result.getTa();   // Target area percentage (size/distance proxy for the blob)
+}
+
+// 2. RAW GAMEPAD INPUT FETCHING
+double left_y = -gamepad1.left_stick_y; // Inverted Y-axis for FTC driving standard
+double left_x = gamepad1.left_stick_x;
+double right_x = gamepad1.right_stick_x;
+
+// 3. JOYSTICK DEADZONE CONDITIONALS
+if (abs(left_y) <= 0.05) {
+    left_y = 0.0;
+}
+if (abs(left_x) <= 0.05) {
+    left_x = 0.0;
+}
+if (abs(right_x) <= 0.05) {
+    right_x = 0.0;
+}
+
+// 4. AUTO-APPROACH & AUTO-INTAKE CONDITIONAL (Left Bumper Override)
+// When held, automatically tracks and drives toward the largest pollen/nectar blob.
+if (gamepad1.left_bumper && targetValid) {
+    
+    // A. Proportional (P) Steering Control toward the largest blob
+    double steerKp = 0.03; 
+    right_x = tx * steerKp; 
+
+    // B. Proportional Approach Control based on blob area (`ta`)
+    double targetAreaStopThreshold = 15.0; // Tweak higher/lower for stopping distance
+    double maxApproachSpeed = 0.4;         // Cap maximum auto-driving speed
+    
+    if (ta < targetAreaStopThreshold) {
+        // Dynamically slow down as the robot gets closer to the blob
+        double distanceError = targetAreaStopThreshold - ta;
+        left_y = Math.min(maxApproachSpeed, distanceError * 0.05); 
+    } else {
+        // Close enough to the pollen/nectar; cease forward translation
+        left_y = 0.0; 
+    }
+
+    // C. Force the intake active while tracking/collecting
+    intakeOn = true;
+}
+
+// 5. MECANUM DRIVE KINEMATICS & POWER CALCULATION
+double flPower = left_y + left_x + right_x;
+double blPower = left_y - left_x + right_x;
+double frPower = left_y - left_x - right_x;
+double brPower = left_y + left_x - right_x;
+
+// 6. MOTOR POWER NORMALIZATION CONDITIONAL
+// Prevents any motor power from exceeding 1.0 while preserving motion ratios
+double maxPower = Math.max(-1.0,
+        Math.max(abs(flPower), Math.max(abs(blPower),
+                Math.max(abs(frPower), abs(brPower)))));
+                
+if (maxPower > 1.0) {
+    flPower /= maxPower;
+    blPower /= maxPower;
+    frPower /= maxPower;
+    brPower /= maxPower;
+}
+
+// Apply driver acceleration scaling modifier via Right Trigger
+double acceleration = 0.75 + (gamepad1.right_trigger * 0.25);
+motor_front_left.setPower(flPower * acceleration);
+motor_back_left.setPower(blPower * acceleration);
+motor_front_right.setPower(frPower * acceleration);
+motor_back_right.setPower(brPower * acceleration);
+
+// 7. INTAKE & SHOOTER TOGGLE CONDITIONALS (Buttons A & X)
+boolean currentAState = gamepad1.a;
+if (currentAState && !lastAState) {
+    intakeOn = !intakeOn; // Toggle state on button press edge
+}
+lastAState = currentAState;
+
+boolean currentXState = gamepad1.x;
+if (currentXState && !lastXState) {
+    shooterOn = !shooterOn; // Toggle state on button press edge
+}
+lastXState = currentXState;
+
+motor_intake.setPower(intakeOn ? 0.667 : 0.0);
+motor_shooter.setPower(shooterOn ? -0.75 : 0.0);
+
+// 8. SERVO POSITION CONDITIONAL (Button B)
+if (gamepad1.b) {
+    servo_intake.setPosition(SERVO_DOWN_POS);
+} else {
+    servo_intake.setPosition(SERVO_START_POS);
+}
+
+// 9. TELEMETRY OUTPUT CONDITIONAL
+telemetry.addData("Limelight Target Found", targetValid);
+if (targetValid) {
+    telemetry.addData("Horizontal Offset (tx)", tx);
+    telemetry.addData("Vertical Offset (ty)", ty);
+    telemetry.addData("Target Area (ta)", ta);
+}
+telemetry.update();
