@@ -109,9 +109,9 @@ public class Proto1code extends LinearOpMode {
             double right_x = gamepad1.right_stick_x;
 
             // Add deadzones
-            if (abs(left_y) <= 0.05) left_y = 0;
-            if (abs(left_x) <= 0.05) left_x = 0;
-            if (abs(right_x) <= 0.05) right_x = 0;
+            if (abs(left_y) <= 0.1) left_y = 0;
+            if (abs(left_x) <= 0.1) left_x = 0;
+            if (abs(right_x) <= 0.1) right_x = 0;
 
             // Auto-Aim Assist: If Left Bumper is held and a blob is visible, override right_x to track the blob!
             if (gamepad1.left_bumper && targetValid) {

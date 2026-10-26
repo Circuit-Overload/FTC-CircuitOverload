@@ -5,6 +5,7 @@ import static java.lang.Math.abs;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.Servo;
 
 // Import the Limelight FTC library classes
@@ -17,8 +18,24 @@ public class Proto1code extends LinearOpMode {
     // Hardware Declarations
     private DcMotor motor_front_left, motor_front_right, motor_back_left, motor_back_right;
     private DcMotor motor_intake;
-    private DcMotor motor_shooter;
+    private DcMotorEx motor_shooter;
     private Servo servo_intake;
+
+    // Shooter closed-loop velocity control (holds RPM despite friction / battery sag)
+    // goBILDA Yellow Jacket encoder: 28 ticks per motor revolution
+    private static final double SHOOTER_TARGET_RPM = 3300.0;
+    private static final double SHOOTER_TICKS_PER_REV = 28.0;
+    private static final double SHOOTER_TARGET_TPS = SHOOTER_TARGET_RPM * SHOOTER_TICKS_PER_REV / 60.0; // = 1540
+    // Shooter spins in the negative direction (same as the old setPower(-0.55))
+    private static final double SHOOTER_DIRECTION = -1.0;
+
+    // Shooter velocity PIDF gains (tune on the robot, change ONE at a time)
+    // F = 32767 / max free-spin ticks per second (about 13 for ~2520 TPS); P = push strength;
+    // I = removes small steady error; D = damps overshoot (keep 0 unless P oscillates)
+    private static final double SHOOTER_P = 15.0;
+    private static final double SHOOTER_I = 0.1;
+    private static final double SHOOTER_D = 0.0;
+    private static final double SHOOTER_F = 13.0;
 
     // Limelight Declaration
     private Limelight3A limelight;
@@ -45,7 +62,10 @@ public class Proto1code extends LinearOpMode {
         motor_back_right = hardwareMap.get(DcMotor.class, "motor_back_right");
 
         motor_intake = hardwareMap.get(DcMotor.class, "motor_intake");
-        motor_shooter = hardwareMap.get(DcMotor.class, "motor_shooter");
+        motor_shooter = hardwareMap.get(DcMotorEx.class, "motor_shooter");
+        // Use the built-in encoder so the hub regulates velocity (PIDF) instead of raw voltage
+        motor_shooter.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        motor_shooter.setVelocityPIDFCoefficients(SHOOTER_P, SHOOTER_I, SHOOTER_D, SHOOTER_F);
         servo_intake = hardwareMap.get(Servo.class, "servo_intake");
 
         // Map Limelight (ensure it matches the name configured in your Robot Controller config)
@@ -89,9 +109,9 @@ public class Proto1code extends LinearOpMode {
             double right_x = gamepad1.right_stick_x;
 
             // Add deadzones
-            if (abs(left_y) <= 0.05) left_y = 0;
-            if (abs(left_x) <= 0.05) left_x = 0;
-            if (abs(right_x) <= 0.05) right_x = 0;
+            if (abs(left_y) <= 0.1) left_y = 0;
+            if (abs(left_x) <= 0.1) left_x = 0;
+            if (abs(right_x) <= 0.1) right_x = 0;
 
             // Auto-Aim Assist: If Left Bumper is held and a blob is visible, override right_x to track the blob!
             if (gamepad1.left_bumper && targetValid) {
@@ -139,7 +159,8 @@ public class Proto1code extends LinearOpMode {
             lastXState = currentXState;
 
             motor_intake.setPower(intakeOn ? 0.667 : 0.0);
-            motor_shooter.setPower(shooterOn ? -0.55 : 0.0);
+            // Closed-loop: hold ~3300 RPM (1540 ticks/sec); hub raises power under load / low battery
+            motor_shooter.setVelocity(shooterOn ? SHOOTER_DIRECTION * SHOOTER_TARGET_TPS : 0.0);
 
             // -------------------------------------------------------------
             // 4. SERVO POSITION CONTROL (Button B)
@@ -153,6 +174,8 @@ public class Proto1code extends LinearOpMode {
             // -------------------------------------------------------------
             // 5. TELEMETRY DISPLAY (Debugging info for the Limelight)
             // -------------------------------------------------------------
+            telemetry.addData("Shooter Target RPM", shooterOn ? SHOOTER_TARGET_RPM : 0.0);
+            telemetry.addData("Shooter Actual RPM", Math.abs(motor_shooter.getVelocity()) * 60.0 / SHOOTER_TICKS_PER_REV);
             telemetry.addData("Limelight Target Found", targetValid);
             if (targetValid) {
                 telemetry.addData("Horizontal Offset (tx)", tx);
