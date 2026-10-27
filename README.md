@@ -61,22 +61,33 @@ The readme.md file located in the [/TeamCode/src/main/java/org/firstinspires/ftc
 
 ## Autonomous Branch (20261026)
 
+This branch keeps the FTC SDK structure and adds team code under `TeamCode`.
+
 ### Breaking Changes
-* None. This branch keeps the FTC SDK structure and adds team code under `TeamCode`.
+* None.
 
 ### Enhancements
-* TeleOp (`ProtoTest1.java`, OpMode name `TeleOp_Main`):
-  * Mecanum drive with left stick for strafe/forward, right stick for turning, and a 0.05 deadzone.
-  * Right trigger adds up to 25% extra drive power on top of a 75% base.
-  * A button toggles the intake motor. B button toggles both intake servos (`servo_intake_left`, `servo_intake_right`).
-* Flywheel tuning tools in `FlywheelAdvanced/`:
-  * `Flywheel.java` maps `motor_flywheel` (encoder counts per revolution: 28) and runs it without encoder control.
-  * `kVTuner.java`, `kSTuner.java`, and `kPTuner.java` are OpModes used to find the feedforward and proportional gains for the flywheel.
-* Autonomous starter (`RobotCameraOpMode.java`, "Basic Vision OpMode Starter") combines AprilTag vision with base movement.
-* Vision helpers: `AprilTagDetection.java` and `BlobDetection.java` are basic AprilTag and color-blob pipelines to adapt once the camera is installed.
+
+**TeleOp: `ProtoTest1.java`** (OpMode name `TeleOp_Main`)
+
+| Control | Action |
+|---|---|
+| Left stick | Strafe and drive (0.05 deadzone) |
+| Right stick | Turn |
+| Right trigger | Adds up to 25% extra power on top of a 75% base |
+| A button | Toggle intake motor |
+| B button | Toggle both intake servos (`servo_intake_left`, `servo_intake_right`) |
+
+**Flywheel tuning: `FlywheelAdvanced/`**
+* `Flywheel.java`: maps `motor_flywheel` (28 encoder counts per revolution) and runs it without encoder control.
+* `kVTuner.java`, `kSTuner.java`, `kPTuner.java`: OpModes for finding the flywheel's feedforward and proportional gains.
+
+**Autonomous and vision**
+* `RobotCameraOpMode.java` ("Basic Vision OpMode Starter"): AprilTag vision combined with base movement.
+* `AprilTagDetection.java` and `BlobDetection.java`: basic AprilTag and color-blob pipelines to adapt once the camera is installed.
 
 ### Known Issues
-* `ProtoTest1.java` sets `motor_intake.setPower(intakeOn ? -100.0 : 0.0)`. Motor power should be between -1.0 and 1.0. Change this to `-1.0` (or the power you want) so the value is valid.
+* `ProtoTest1.java` sets `motor_intake.setPower(intakeOn ? -100.0 : 0.0)`. Motor power must be between -1.0 and 1.0, so change `-100.0` to `-1.0`.
 * Flywheel encoder setup is still being tested. Confirm the flywheel encoder cable is plugged into the hub before using velocity control.
 
 ## Version 12.0 (20260907-090034)
