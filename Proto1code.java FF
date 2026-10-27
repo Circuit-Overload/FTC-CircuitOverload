@@ -36,6 +36,8 @@ public class Proto1code extends LinearOpMode {
     private static final double SHOOTER_I = 0.1;
     private static final double SHOOTER_D = 0.0;
     private static final double SHOOTER_F = 13.0;
+    /** RPM within this band of target counts as "at speed" for debug telemetry */
+    private static final double SHOOTER_AT_SPEED_TOLERANCE_RPM = 150.0;
 
     // Limelight Declaration
     private Limelight3A limelight;
@@ -177,10 +179,23 @@ public class Proto1code extends LinearOpMode {
             // -------------------------------------------------------------
             // 5. TELEMETRY DISPLAY (Debugging info for the Limelight)
             // -------------------------------------------------------------
-            telemetry.addData("Shooter Target RPM", shooterOn ? SHOOTER_TARGET_RPM : 0.0);
-            telemetry.addData("Shooter Actual RPM", Math.abs(motor_shooter.getVelocity()) * 60.0 / SHOOTER_TICKS_PER_REV);
-            telemetry.addData("Limelight Target Found", targetValid);
+            double shooterVelocityTps = motor_shooter.getVelocity();
+            double shooterActualRpm = Math.abs(shooterVelocityTps) * 60.0 / SHOOTER_TICKS_PER_REV;
+            boolean shooterAtSpeed = shooterOn
+                    && Math.abs(shooterActualRpm - SHOOTER_TARGET_RPM) <= SHOOTER_AT_SPEED_TOLERANCE_RPM;
 
+            telemetry.addData("Shooter Target RPM", shooterOn ? SHOOTER_TARGET_RPM : 0.0);
+            telemetry.addData("Shooter Actual RPM", shooterActualRpm);
+            telemetry.addData("Shooter ON (X toggle)", shooterOn);
+            telemetry.addData("Shooter at speed?", shooterAtSpeed);
+            telemetry.addData("Shooter encoder position", motor_shooter.getCurrentPosition());
+            telemetry.addData("Shooter velocity TPS (raw)", shooterVelocityTps);
+            telemetry.addData("Shooter commanded TPS", shooterOn ? SHOOTER_DIRECTION * SHOOTER_TARGET_TPS : 0.0);
+            if (shooterOn && shooterActualRpm < 50.0) {
+                telemetry.addLine("Shooter: encoder may be unplugged if position/RPM stay ~0");
+            }
+
+            telemetry.addData("Limelight Target Found", targetValid);
             if (targetValid) {
                 telemetry.addData("Horizontal Offset (tx)", tx);
                 telemetry.addData("Vertical Offset (ty)", result.getTy());
