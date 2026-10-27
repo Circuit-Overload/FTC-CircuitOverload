@@ -182,7 +182,7 @@ public class Proto1code extends LinearOpMode {
             // telemetry.addData("Shooter Target RPM", shooterOn ? SHOOTER_TARGET_RPM : 0.0);
             // telemetry.addData("Shooter Actual RPM", Math.abs(motor_shooter.getVelocity()) * 60.0 / SHOOTER_TICKS_PER_REV);
             telemetry.addData("Limelight Target Found", targetValid);
-            telemetry.addData("current position", motor.getCurrentPosition());
+
             if (targetValid) {
                 telemetry.addData("Horizontal Offset (tx)", tx);
                 telemetry.addData("Vertical Offset (ty)", result.getTy());
