@@ -4,7 +4,7 @@ import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 
 @Autonomous(name="My First Autonomous", group="Autonomous")
-public class MyFirstAutonomous extends LinearOpMode {
+public class CircuitOverloadAutonomous extends LinearOpMode {
 
 
     @Override
@@ -21,7 +21,6 @@ public class MyFirstAutonomous extends LinearOpMode {
         if (opModeIsActive()) {
 
 
-
             // strafe for 3 seconds left
             robotMovement.strafeForSeconds(-0.5, 3);
 
@@ -32,8 +31,10 @@ public class MyFirstAutonomous extends LinearOpMode {
 
             robotMovement.turnForSeconds(-0.5, 3);
 
+            robotMovement.driveStraightInches(0.5, 5);
 
 
         }
     }
+
 }
