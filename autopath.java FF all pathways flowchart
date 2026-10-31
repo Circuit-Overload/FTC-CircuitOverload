@@ -1,0 +1,83 @@
+// Path one 
+
+[ START_POSE ]
+       │
+       ▼
+ Drive to SCORING_JUNCTION ──► Score Initial Element
+       │
+       ▼
+ ┌──────────────────────────────────────────────┐
+ │          4-CYCLE REPETITION LOOP (x4)        │
+ ├──────────────────────────────────────────────┤
+ │ 1. [Parallel Action]                         │
+ │    ├── Spline to INTAKE_ZONE                 │
+ │    └── Run Intake Rollers (`runIntake`)      │
+ │                                              │
+ │ 2. [Parallel Action]                         │
+ │    ├── Spline to SCORING_JUNCTION            │
+ │    └── Raise Elevator (`raiseElevator`)      │
+ │                                              │
+ │ 3. [Sequential Action]                       │
+ │    └── Release / Score Element               │
+ └──────────────────────┬───────────────────────┘
+                        │
+                        ▼
+            Spline to PARK_ZONE (End)
+
+//Path two
+
+[ START_POSE ]
+       │
+       ▼
+ ┌──────────────────────────────────────────────┐
+ │         CONSERVATIVE 2-CYCLE LOOP (x2)       │
+ ├──────────────────────────────────────────────┤
+ │ 1. Safe Path Trajectory:                     │
+ │    ├── Constant Heading X/Y to SCORING       │
+ │    └── Spline to INTAKE_ZONE (45° heading)   │
+ │                                              │
+ │ 2. Sequential Action:                        │
+ │    └── Score Element (`scoreElement`)        │
+ └──────────────────────┬───────────────────────┘
+                        │
+                        ▼
+          Constant Heading Drive to PARK_ZONE (End)
+
+//Path three 
+
+[ START_POSE ]
+       │
+       ▼
+ Spline to INTERFERENCE_ZONE (135° heading)
+       │
+       ▼
+ Wait / Pause 0.4s (Blocks / Disrupts Opponent)
+       │
+       ▼
+ Spline to SCORING_JUNCTION (90° heading) ──► Score 1st Element
+       │
+       ▼
+ Quick Cycle: Spline to INTAKE ➔ Spline to SCORING
+       │
+       ▼
+ Score 2nd Element (`scoreElement`)
+       │
+       ▼
+ Defensive Offset Park (PARK_ZONE.x + 10) (End)
+
+
+//Path four 
+
+[ START_POSE ]
+       │
+       ▼
+ Straight-Line Cartesian Drive (`lineToX`/`lineToY`) to SCORING_JUNCTION
+       │
+       ▼
+ Score Element (`scoreElementAction`)
+       │
+       ▼
+ Sleep / Pause 0.5s (Buffer stabilization)
+       │
+       ▼
+ Straight-Line Cartesian Drive to PARK_ZONE (End)

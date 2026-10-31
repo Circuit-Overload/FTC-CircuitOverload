@@ -1,0 +1,23 @@
+[ Robot Powered On & OpMode Initialized ]
+                   │
+                   ▼
+     ┌─────────────────────────────┐
+     │  Pre-Match Selection Loop   │ ──(Reads Gamepad 1 D-Pad & Updates Telemetry)
+     └─────────────┬─────────────┘
+                   │ 
+                   ├───────────────────────┬───────────────────────┬───────────────────────┐
+                   ▼                       ▼                       ▼                       ▼
+           [DPAD_UP ➔ Route 1]   [DPAD_RIGHT ➔ Route 2]  [DPAD_DOWN ➔ Route 3]   [DPAD_LEFT ➔ Route 4]
+           (4-Cycle Primary)     (Conservative 2-Cycle)  (Midfield Interference) (Low-Risk Backup)
+                   │                       │                       │                       │
+                   └───────────────────────┴───────────┬───────────┴───────────────────────┘
+                                                       │
+                                                       ▼
+                                        [ MATCH START SIGNAL RECEIVED ]
+                                                       │
+                                                       ▼
+                                        [ Switch (selectedRoute) ]
+                                                       │
+         ┌─────────────────────┬───────────────────────┼───────────────────────┐
+         ▼                     ▼                       ▼                       ▼
+  { Route 1 Selected }  { Route 2 Selected }    { Route 3 Selected }    { Route 4 Selected }
