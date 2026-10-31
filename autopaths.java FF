@@ -1,0 +1,235 @@
+package org.firstinspires.ftc.teamcode.auton;
+
+import com.acmerobotics.roadrunner.Action;
+import com.acmerobotics.roadrunner.ParallelAction;
+import com.acmerobotics.roadrunner.Pose2d;
+import com.acmerobotics.roadrunner.SequentialAction;
+import com.acmerobotics.roadrunner.SleepAction;
+import com.acmerobotics.roadrunner.Vector2d;
+import com.acmerobotics.roadrunner.ftc.Actions;
+import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+
+import org.firstinspires.ftc.teamcode.MecanumDrive;
+import org.firstinspires.ftc.teamcode.subsystems.RobotHardware;
+
+@Autonomous(name = "Master_FourRoute_Auton_Selector", group = "Competition")
+public class MasterFourRouteAutonSelector extends LinearOpMode {
+
+    // Define available autonomous route options
+    public enum AutonomousRoute {
+        ROUTE_1_HIGH_VELOCITY_4_CYCLE,
+        ROUTE_2_CONSERVATIVE_2_CYCLE,
+        ROUTE_3_MIDFIELD_INTERFERENCE,
+        ROUTE_4_LOW_RISK_BACKUP
+    }
+
+    private AutonomousRoute selectedRoute = AutonomousRoute.ROUTE_1_HIGH_VELOCITY_4_CYCLE;
+
+    // Field coordinate constants (Inches / Radians)
+    private final Pose2d START_POSE = new Pose2d(36.0, -60.0, Math.toRadians(90.0));
+    private final Vector2d SCORING_JUNCTION = new Vector2d(12.0, -36.0);
+    private final Vector2d INTAKE_ZONE = new Vector2d(48.0, -58.0);
+    private final Vector2d PARK_ZONE = new Vector2d(60.0, -60.0);
+    private final Vector2d INTERFERENCE_ZONE = new Vector2d(24.0, -24.0);
+
+    @Override
+    public void runOpMode() throws InterruptedException {
+        // Initialize Drivetrain and Hardware Subsystems
+        MecanumDrive drive = new MecanumDrive(hardwareMap, START_POSE);
+        RobotHardware robot = new RobotHardware(hardwareMap);
+
+        // Pre-match route selection loop via Gamepad inputs
+        while (!isStarted() && !isStopRequested()) {
+            if (gamepad1.dpad_up) {
+                selectedRoute = AutonomousRoute.ROUTE_1_HIGH_VELOCITY_4_CYCLE;
+            } else if (gamepad1.dpad_right) {
+                selectedRoute = AutonomousRoute.ROUTE_2_CONSERVATIVE_2_CYCLE;
+            } else if (gamepad1.dpad_down) {
+                selectedRoute = AutonomousRoute.ROUTE_3_MIDFIELD_INTERFERENCE;
+            } else if (gamepad1.dpad_left) {
+                selectedRoute = AutonomousRoute.ROUTE_4_LOW_RISK_BACKUP;
+            }
+
+            telemetry.addData("=== FTC MASTER AUTONOMOUS SELECTOR ===", "");
+            telemetry.addData("Selected Route (Use D-Pad):", selectedRoute.toString());
+            telemetry.addData("------------------------------------", "");
+            telemetry.addData("DPAD_UP    ->", "Route 1: High-Velocity 4-Cycle (Primary)");
+            telemetry.addData("DPAD_RIGHT ->", "Route 2: Conservative 2-Cycle & Safe Park");
+            telemetry.addData("DPAD_DOWN  ->", "Route 3: Mid-Field Interference & Disruptive");
+            telemetry.addData("DPAD_LEFT  ->", "Route 4: Low-Risk Blind Backup");
+            telemetry.update();
+            sleep(20);
+        }
+
+        waitForStart();
+        if (isStopRequested()) return;
+
+        // Execute the user-selected autonomous routine
+        switch (selectedRoute) {
+            case ROUTE_1_HIGH_VELOCITY_4_CYCLE:
+                executeRoute1(drive, robot);
+                break;
+            case ROUTE_2_CONSERVATIVE_2_CYCLE:
+                executeRoute2(drive, robot);
+                break;
+            case ROUTE_3_MIDFIELD_INTERFERENCE:
+                executeRoute3(drive, robot);
+                break;
+            case ROUTE_4_LOW_RISK_BACKUP:
+                executeRoute4(drive, robot);
+                break;
+        }
+    }
+
+    /**
+     * ROUTE 1: High-Velocity 4-Cycle Scoring Route (Primary Competition Path)
+     * Maximizes cycle count via tight spline stitching and parallel subsystem threads.
+     */
+    private void executeRoute1(MecanumDrive drive, RobotHardware robot) {
+        telemetry.addData("Status", "Executing Route 1: 4-Cycle Primary");
+        telemetry.update();
+
+        // Initial scoring trajectory
+        Action initialScore = drive.actionBuilder(START_POSE)
+                .lineToXConstantHeading(SCORING_JUNCTION.x)
+                .lineToYConstantHeading(SCORING_JUNCTION.y)
+                .build();
+
+        Actions.runBlocking(new SequentialAction(
+                initialScore,
+                robot.scoreElementAction()
+        ));
+
+        // 4-Cycle Execution Loop
+        for (int cycle = 1; cycle <= 4; cycle++) {
+            telemetry.addData("Route 1 Cycle", cycle + "/4 in progress");
+            telemetry.update();
+
+            // Drive to intake + run intake in parallel
+            Action toIntake = drive.actionBuilder(drive.pose)
+                    .splineTo(INTAKE_ZONE, Math.toRadians(0))
+                    .build();
+
+            Actions.runBlocking(new ParallelAction(
+                    toIntake,
+                    robot.runIntakeAction()
+            ));
+
+            // Drive back to scoring junction + lift elevator in parallel
+            Action toScore = drive.actionBuilder(drive.pose)
+                    .splineTo(SCORING_JUNCTION, Math.toRadians(180))
+                    .build();
+
+            Actions.runBlocking(new ParallelAction(
+                    toScore,
+                    robot.raiseElevatorAction()
+            ));
+
+            // Complete score cycle
+            Actions.runBlocking(robot.scoreElementAction());
+        }
+
+        // Final Park
+        Action park = drive.actionBuilder(drive.pose)
+                .splineTo(PARK_ZONE, Math.toRadians(0))
+                .build();
+        Actions.runBlocking(park);
+    }
+
+    /**
+     * ROUTE 2: Conservative 2-Cycle & Safe Park Route
+     * Prioritizes consistency, wider clearance margins, and reliable parking.
+     */
+    private void executeRoute2(MecanumDrive drive, RobotHardware robot) {
+        telemetry.addData("Status", "Executing Route 2: Conservative 2-Cycle");
+        telemetry.update();
+
+        // Safe 2-cycle loop
+        for (int cycle = 1; cycle <= 2; cycle++) {
+            Action safeCyclePath = drive.actionBuilder(drive.pose)
+                    .lineToXConstantHeading(SCORING_JUNCTION.x)
+                    .lineToYConstantHeading(SCORING_JUNCTION.y)
+                    .splineTo(INTAKE_ZONE, Math.toRadians(45))
+                    .build();
+
+            Actions.runBlocking(new SequentialAction(
+                    safeCyclePath,
+                    robot.scoreElementAction()
+            ));
+        }
+
+        // Secure Park
+        Action safePark = drive.actionBuilder(drive.pose)
+                .lineToXConstantHeading(PARK_ZONE.x)
+                .lineToYConstantHeading(PARK_ZONE.y)
+                .build();
+        Actions.runBlocking(safePark);
+    }
+
+    /**
+     * ROUTE 3: Mid-Field Interference & Disruptive Route
+     * Intercepts opponent pathways and neutral zone elements before completing 2 quick scores.
+     */
+    private void executeRoute3(MecanumDrive drive, RobotHardware robot) {
+        telemetry.addData("Status", "Executing Route 3: Mid-Field Interference");
+        telemetry.update();
+
+        // Intercept path into neutral zone
+        Action interferencePath = drive.actionBuilder(START_POSE)
+                .splineTo(INTERFERENCE_ZONE, Math.toRadians(135))
+                .waitSeconds(0.4) // Brief pause to disrupt or clear zone
+                .splineTo(SCORING_JUNCTION, Math.toRadians(90))
+                .build();
+
+        Actions.runBlocking(new SequentialAction(
+                interferencePath,
+                robot.scoreElementAction()
+        ));
+
+        // Quick secondary cycle
+        Action quickCycle = drive.actionBuilder(drive.pose)
+                .splineTo(INTAKE_ZONE, Math.toRadians(0))
+                .splineTo(SCORING_JUNCTION, Math.toRadians(180))
+                .build();
+
+        Actions.runBlocking(new SequentialAction(
+                quickCycle,
+                robot.scoreElementAction()
+        ));
+
+        // Defensive Park
+        Action defensivePark = drive.actionBuilder(drive.pose)
+                .lineToXConstantHeading(PARK_ZONE.x + 10)
+                .build();
+        Actions.runBlocking(defensivePark);
+    }
+
+    /**
+     * ROUTE 4: Low-Risk Blind Backup Autonomous
+     * Pure sensorless dead-wheel trajectory for fallback match conditions.
+     */
+    private void executeRoute4(MecanumDrive drive, RobotHardware robot) {
+        telemetry.addData("Status", "Executing Route 4: Low-Risk Backup");
+        telemetry.update();
+
+        // Straight-line blind scoring trajectory
+        Action blindPath = drive.actionBuilder(START_POSE)
+                .lineToX(SCORING_JUNCTION.x)
+                .lineToY(SCORING_JUNCTION.y)
+                .build();
+
+        Actions.runBlocking(new SequentialAction(
+                blindPath,
+                robot.scoreElementAction(),
+                new SleepAction(0.5)
+        ));
+
+        // Simple backup park
+        Action backupPark = drive.actionBuilder(drive.pose)
+                .lineToX(PARK_ZONE.x)
+                .lineToY(PARK_ZONE.y)
+                .build();
+        Actions.runBlocking(backupPark);
+    }
+}
