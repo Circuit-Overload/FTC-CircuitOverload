@@ -163,7 +163,7 @@ public class Proto1code extends LinearOpMode {
             // -------------------------------------------------------------
             // 3. INTAKE & SHOOTER MOTOR TOGGLES (Buttons A & X)
             // -------------------------------------------------------------
-            boolean currentAState = gamepad1.a;
+            boolean currentAState = gamepad1.a || gamepad2.a;
             if (currentAState && !lastAState) {
                 intakeOn = !intakeOn;
             }
