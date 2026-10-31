@@ -123,7 +123,8 @@ public class Proto1code extends LinearOpMode {
             if (abs(g2_y) <= 0.05) g2_y = 0;
             if (abs(g2_x) <= 0.05) g2_x = 0;
             if (abs(g2_r) <= 0.05) g2_r = 0;
-            if (g2_y != 0 || g2_x != 0 || g2_r != 0) {
+            boolean gamepad1Moving = left_y != 0 || left_x != 0 || right_x != 0;
+            if (!gamepad1Moving && (g2_y != 0 || g2_x != 0 || g2_r != 0)) {
                 left_y = g2_y * PRECISION_SCALE;
                 left_x = g2_x * PRECISION_SCALE;
                 right_x = g2_r * PRECISION_SCALE;
