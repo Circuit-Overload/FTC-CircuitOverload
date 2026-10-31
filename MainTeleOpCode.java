@@ -169,7 +169,7 @@ public class Proto1code extends LinearOpMode {
             }
             lastAState = currentAState;
 
-            boolean currentXState = gamepad1.x;
+            boolean currentXState = gamepad1.x || gamepad2.x;
             if (currentXState && !lastXState) {
                 shooterOn = !shooterOn;
             }
@@ -185,7 +185,7 @@ public class Proto1code extends LinearOpMode {
             // -------------------------------------------------------------
             // 4. SERVO POSITION CONTROL (Button B)
             // -------------------------------------------------------------
-            if (gamepad1.b) {
+            if (gamepad1.b || gamepad2.b) {
                 servo_intake.setPosition(SERVO_DOWN_POS);
             } else {
                 servo_intake.setPosition(SERVO_START_POS);
