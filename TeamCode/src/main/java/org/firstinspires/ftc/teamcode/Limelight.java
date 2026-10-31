@@ -3,6 +3,7 @@ package org.firstinspires.ftc.teamcode;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.hardware.limelightvision.LLResult;
+import com.qualcomm.robotcore.util.ElapsedTime;
 
 public class Limelight {
     private Limelight3A limelight;
@@ -85,6 +86,62 @@ public class Limelight {
             opMode.telemetry.addData("Vertical Offset (ty)", getTy());
             opMode.telemetry.addData("Target Area (ta)", getTa());
         }
+    }
+
+    public boolean alignToTarget(Movement movement) {
+        ElapsedTime timer = new ElapsedTime();
+
+        timer.reset();
+
+        while (opMode.opModeIsActive()
+                && timer.seconds() < 1.5) {
+
+            LLResult result = getResult();
+
+            // Stop if the target is lost.
+
+            if (result == null || !result.isValid()) {
+
+                movement.stop();
+
+                return false;
+
+            }
+
+            double tx = result.getTx();
+
+            // Target is centered.
+
+            if (Math.abs(tx) <= 2.0) {
+
+                movement.stop();
+
+                return true;
+
+            }
+
+            // Slow corrective turn.
+
+            double power = 0.15;
+
+            if (tx > 0) {
+
+                movement.turn(power);
+
+            } else {
+
+                movement.turn(-power);
+
+            }
+
+            opMode.idle();
+
+        }
+
+        movement.stop();
+
+        return false;
+
     }
 }
 
