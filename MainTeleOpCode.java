@@ -13,7 +13,7 @@ import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.hardware.limelightvision.LLResult;
 
 @TeleOp(name="TeleOp_Main", group="Linear OpMode")
-public class Proto1code extends LinearOpMode {
+public class MainTeleOpCode extends LinearOpMode {
 
     // Hardware Declarations
     private DcMotor motor_front_left, motor_front_right, motor_back_left, motor_back_right;
