@@ -115,6 +115,20 @@ public class Proto1code extends LinearOpMode {
             if (abs(left_x) <= 0.05) left_x = 0;
             if (abs(right_x) <= 0.05) right_x = 0;
 
+            // Precision drive on gamepad2: lower sensitivity, overrides gamepad1 drive while its sticks are moved
+            final double PRECISION_SCALE = 0.3;
+            double g2_y = -gamepad2.left_stick_y;
+            double g2_x = gamepad2.left_stick_x;
+            double g2_r = gamepad2.right_stick_x;
+            if (abs(g2_y) <= 0.05) g2_y = 0;
+            if (abs(g2_x) <= 0.05) g2_x = 0;
+            if (abs(g2_r) <= 0.05) g2_r = 0;
+            if (g2_y != 0 || g2_x != 0 || g2_r != 0) {
+                left_y = g2_y * PRECISION_SCALE;
+                left_x = g2_x * PRECISION_SCALE;
+                right_x = g2_r * PRECISION_SCALE;
+            }
+
             // Auto-Aim Assist: If Left Bumper is held and a blob is visible, override right_x to track the blob!
             if (gamepad1.left_bumper && targetValid) {
                 double steerKp = 0.03; // Tweak this gain value based on how fast it turns
