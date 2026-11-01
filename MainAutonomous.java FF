@@ -1,0 +1,209 @@
+
+package org.firstinspires.ftc.teamcode;
+
+import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+
+@Autonomous(name = "Main Autonomous")
+public class MainAutonomous extends LinearOpMode {
+
+    Movement drive;
+    Intake intake;
+    Shooter shooter;
+    Limelight vision;
+
+    @Override
+    public void runOpMode() {
+
+        // 1. Initialize all mechanism classes
+        drive = new Movement(this);
+        intake = new Intake(this);
+        shooter = new Shooter(this);
+        vision = new Limelight(this);
+
+        // 2. Map hardware
+        drive.hardwareMapMotors(
+                "frontLeft",
+                "backLeft",
+                "frontRight",
+                "backRight"
+        );
+
+        intake.hardwareMapMotor("intakeMotor");
+        shooter.hardwareMapShooters("shooterMotor");
+        vision.hardwareMapLimelight("limelight", 0);
+
+        telemetry.addLine("Initialization Complete. Waiting for start.");
+        telemetry.update();
+
+        waitForStart();
+
+        if (opModeIsActive()) {
+            // Path1();
+            Path2();
+            // Path3();
+            // Path4();
+        }
+    }
+
+    public void Path1() {
+
+        // INITIAL SCORE PHASE
+        drive.strafeInches(0.7, -24);
+        drive.driveStraightInches(0.7, 24);
+
+        boolean aligned = vision.alignToTarget(drive);
+
+        if (aligned) {
+            shooter.fireForSeconds(1.5, 2.0);
+        } else {
+            telemetry.addLine("Vision align failed! Skipping shot.");
+            telemetry.update();
+        }
+
+        // REPEATING CYCLES
+        for (int i = 0; i < 3; i++) {
+
+            if (getRuntime() > 25.0) {
+                break;
+            }
+
+            // INTAKE PHASE
+            drive.driveStraightInches(0.7, -24);
+            drive.strafeInches(0.7, 36);
+            drive.driveStraightInches(0.4, 2);
+            intake.runForSeconds(0.8, 1.5);
+
+            // SCORING PHASE
+            drive.driveStraightInches(0.5, -2);
+            drive.strafeInches(0.7, -36);
+            drive.driveStraightInches(0.7, 24);
+
+            if (vision.alignToTarget(drive)) {
+                shooter.fireForSeconds(1.5, 2.0);
+            }
+        }
+
+        // FINAL PARK
+        drive.driveStraightInches(0.8, -24);
+        drive.strafeInches(0.8, 48);
+    }
+
+    public void Path2() {
+
+        // INITIAL SCORE PHASE
+        drive.strafeInches(0.6, -24);
+        drive.driveStraightInches(0.6, 24);
+
+        sleep(500);
+
+        if (vision.alignToTarget(drive)) {
+            shooter.fireForSeconds(1.5, 2.0);
+        } else {
+            telemetry.addLine("Vision align failed! Skipping shot.");
+            telemetry.update();
+        }
+
+        // CYCLE 1: INTAKE PHASE
+        drive.driveStraightInches(0.6, -24);
+        drive.strafeInches(0.6, 36);
+        drive.driveStraightInches(0.4, 2);
+
+        intake.runForSeconds(0.8, 1.5);
+
+        // CYCLE 1: SCORING PHASE
+        drive.driveStraightInches(0.5, -2);
+        drive.strafeInches(0.6, -36);
+        drive.driveStraightInches(0.6, 24);
+
+        if (vision.alignToTarget(drive)) {
+            shooter.fireForSeconds(1.5, 2.0);
+        }
+
+        // FINAL PARK
+        drive.driveStraightInches(0.7, -24);
+        drive.strafeInches(0.8, 58);
+    }
+
+    public void Path3() {
+
+        // INITIAL SCORE PHASE
+        drive.strafeInches(0.6, -24);
+        drive.driveStraightInches(0.6, 24);
+
+        if (vision.alignToTarget(drive)) {
+            shooter.fireForSeconds(1.5, 2.0);
+        } else {
+            telemetry.addLine("Vision align failed! Skipping shot.");
+            telemetry.update();
+        }
+
+        // MID-FIELD DOMINANCE
+        drive.strafeInches(0.6, 12);
+        drive.driveStraightInches(0.6, 12);
+
+        sleep(400);
+
+        // CYCLE 2: INTAKE PHASE
+        drive.driveStraightInches(0.6, -34);
+        drive.strafeInches(0.6, 24);
+
+        intake.runForSeconds(0.8, 1.5);
+
+        // CYCLE 2: SCORING PHASE
+        drive.driveStraightInches(0.5, -2);
+        drive.strafeInches(0.6, -36);
+        drive.driveStraightInches(0.6, 24);
+
+        if (vision.alignToTarget(drive)) {
+            shooter.fireForSeconds(1.5, 2.0);
+        }
+
+        // FINAL PARK
+        drive.driveStraightInches(0.7, -24);
+        drive.strafeInches(0.8, 58);
+    }
+
+    public void Path4() {
+
+        // INITIAL SCORE PHASE
+        drive.strafeInches(0.6, -24);
+
+        sleep(300);
+
+        drive.driveStraightInches(0.6, 24);
+
+        if (vision.alignToTarget(drive)) {
+            shooter.fireForSeconds(1.5, 2.0);
+        } else {
+            shooter.fireForSeconds(1.5, 2.0);
+        }
+
+        // CYCLE 1: INTAKE PHASE
+        drive.driveStraightInches(0.6, -24);
+        drive.strafeInches(0.6, 36);
+        drive.driveStraightInches(0.4, 2);
+
+        intake.runForSeconds(0.8, 1.5);
+
+        // CYCLE 1: SCORING PHASE
+        drive.driveStraightInches(0.5, -2);
+        drive.strafeInches(0.6, -36);
+
+        sleep(300);
+
+        drive.driveStraightInches(0.6, 24);
+
+        if (vision.alignToTarget(drive)) {
+            shooter.fireForSeconds(1.5, 2.0);
+        } else {
+            shooter.fireForSeconds(1.5, 2.0);
+        }
+
+        // FINAL PARK
+        drive.driveStraightInches(0.7, -24);
+        drive.strafeInches(0.8, 48);
+    }
+
+    // PLACE ROBOT AT (36, -60) COORDINATE.
+}
