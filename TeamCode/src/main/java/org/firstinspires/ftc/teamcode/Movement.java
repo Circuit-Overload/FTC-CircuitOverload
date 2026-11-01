@@ -273,5 +273,101 @@ public class Movement {
             motor_back_right.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         }
     }
+    public void diagonalForSeconds(double power, double angle, double seconds) {
+        runtime.reset();
+
+        // Convert angle to radians
+        double radians = Math.toRadians(angle);
+
+        // Calculate the vector components for mecanum wheels
+        // cos(angle) controls forward/backward, sin(angle) controls strafing left/right
+        double forward = Math.cos(radians);
+        double strafe = Math.sin(radians);
+
+        // Standard mecanum mixing formula for diagonal movement
+        double frontLeftPower  = (forward + strafe) * power;
+        double frontRightPower = (forward - strafe) * power;
+        double backLeftPower   = (forward - strafe) * power;
+        double backRightPower  = (forward + strafe) * power;
+
+        // Normalize powers so none exceed 1.0
+        double max = Math.max(Math.max(Math.abs(frontLeftPower), Math.abs(frontRightPower)),
+                Math.max(Math.abs(backLeftPower), Math.abs(backRightPower)));
+        if (max > 1.0) {
+            frontLeftPower /= max;
+            frontRightPower /= max;
+            backLeftPower /= max;
+            backRightPower /= max;
+        }
+
+        while (opMode.opModeIsActive() && runtime.seconds() < seconds) {
+            motor_front_left.setPower(frontLeftPower);
+            motor_front_right.setPower(frontRightPower);
+            motor_back_left.setPower(backLeftPower);
+            motor_back_right.setPower(backRightPower);
+
+            opMode.telemetry.addData("Driving Diagonally, Angle:", angle);
+            opMode.telemetry.addData("Time left:", "%.2f", seconds - runtime.seconds());
+            opMode.telemetry.update();
+        }
+        stop();
+    }
+
+    /**
+     * Drives diagonally using encoders for a precise number of inches at a specific angle.
+     *
+     * @param power  Overall speed/power
+     * @param angle  Angle in degrees (e.g., 45 for up-right, 135 for down-right)
+     * @param inches Distance to travel
+     */
+    public void driveDiagonalInches(double power, double angle, double inches) {
+        if (opMode.opModeIsActive()) {
+            double radians = Math.toRadians(angle);
+            double forward = Math.cos(radians);
+            double strafe = Math.sin(radians);
+
+            // Factor in slip for diagonal/strafe movement
+            double effectiveInches = inches * ((Math.abs(strafe) > 0.1) ? STRAFE_SLIP_MULTIPLIER : 1.0);
+            int targetTicks = (int) (effectiveInches * COUNTS_PER_INCH_STRAIGHT);
+
+            // Calculate individual motor target adjustments based on the vector
+            int flTarget = (int) (targetTicks * (forward + strafe));
+            int frTarget = (int) (targetTicks * (forward - strafe));
+            int blTarget = (int) (targetTicks * (forward - strafe));
+            int brTarget = (int) (targetTicks * (forward + strafe));
+
+            setEncoderMode("STOP_AND_RESET_ENCODER");
+
+            motor_front_left.setTargetPosition(flTarget);
+            motor_front_right.setTargetPosition(frTarget);
+            motor_back_left.setTargetPosition(blTarget);
+            motor_back_right.setTargetPosition(brTarget);
+
+            setEncoderMode("RUN_TO_POSITION");
+
+            double flPower = (forward + strafe) * Math.abs(power);
+            double frPower = (forward - strafe) * Math.abs(power);
+            double blPower = (forward - strafe) * Math.abs(power);
+            double brPower = (forward + strafe) * Math.abs(power);
+
+            motor_front_left.setPower(flPower);
+            motor_front_right.setPower(frPower);
+            motor_back_left.setPower(blPower);
+            motor_back_right.setPower(brPower);
+
+            while (opMode.opModeIsActive() &&
+                    (motor_front_left.isBusy() || motor_front_right.isBusy() ||
+                            motor_back_left.isBusy() || motor_back_right.isBusy())) {
+
+                opMode.telemetry.addData("Diagonal Angle", angle);
+                opMode.telemetry.addData("Target Ticks FL", flTarget);
+                opMode.telemetry.addData("Current FL", motor_front_left.getCurrentPosition());
+                opMode.telemetry.update();
+            }
+
+            stop();
+            setEncoderMode("RUN_USING_ENCODER");
+        }
+    }
 }
 
