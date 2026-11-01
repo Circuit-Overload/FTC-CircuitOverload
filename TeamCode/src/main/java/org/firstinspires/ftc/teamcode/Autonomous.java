@@ -19,9 +19,9 @@ public class Autonomous extends LinearOpMode {
         vision = new Limelight(this);
 
         // 2. Map hardware
-        drive.hardwareMapMotors("frontLeft", "backLeft", "frontRight", "backRight");
-        intake.hardwareMapMotor("intakeMotor");
-        shooter.hardwareMapShooters("shooterMotor");
+        drive.hardwareMapMotors("motor_front_left", "motor_back_left", "motor_front_right", "motor_back_right");
+        intake.hardwareMapMotor("motor_intake");
+        shooter.hardwareMapShooters("motor_shooter");
         vision.hardwareMapLimelight("limelight", 0); // Pipeline 0 for target tracking
 
         telemetry.addLine("Initialization Complete. Waiting for start.");
