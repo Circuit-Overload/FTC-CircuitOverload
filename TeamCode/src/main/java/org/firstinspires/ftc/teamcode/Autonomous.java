@@ -34,11 +34,27 @@ public class Autonomous extends LinearOpMode {
             // Path2();
             // Path3();
             // Path4();
+            SketchPath();
 
             // uncomment the path that you need to test above
         }
 
     }
+    /**
+     * Pathway final: start on tile W1, strafe left to the 2nd spot (V1),
+     * drive diagonally up to the pick area, then strafe left to park.
+     * Assumes 1 tile = 24 inches and the robot faces up the field.
+     */
+    public void SketchPath() {
+        drive.strafeInches(0.6, -24);
+
+        double diagonalInches = Math.hypot(36, 72);
+        double diagonalAngle = Math.toDegrees(Math.atan2(36, 72));
+        drive.driveDiagonalInches(0.6, diagonalAngle, diagonalInches);
+
+        drive.strafeInches(0.6, -36);
+    }
+
     public void Path1 () {
         // ==========================================
         // INITIAL SCORE PHASE (Runs exactly once)
