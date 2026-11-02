@@ -27,7 +27,7 @@ public class AdvikAutoRoute extends LinearOpMode {
         if (opModeIsActive()) {
 
             //Not Finished
-            //path1();
+            path1();
             //Finished
             // path2();
         }
@@ -37,7 +37,14 @@ public class AdvikAutoRoute extends LinearOpMode {
 
     public void path1() {
         shooter.fireForSeconds(1.5, 2.0);
-        drive.turnDegrees(-0.5, -90);
+        drive.driveStraightInches(0.5, 5);
+        sleep(200);
+        drive.turnDegreesIMU(0.5, -90, 3.0); // IMU turn: -90 = left 90 deg
+        sleep(200);
+        drive.strafeInches(0.5, -5);   
+        intake.setPower(0.5);            
+        drive.driveStraightInches(0.5, 48); 
+        intake.stop();                      // stop intake once drive finishes
     }
 
     //Finished
@@ -53,3 +60,5 @@ public class AdvikAutoRoute extends LinearOpMode {
     }
 
 }
+
+
