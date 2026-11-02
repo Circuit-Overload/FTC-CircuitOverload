@@ -174,8 +174,8 @@ public class Movement {
         motor_back_left.setPower(power);
 
         while (opMode.opModeIsActive() &&
-                (motor_front_left.isBusy() && motor_front_right.isBusy() &&
-                        motor_back_left.isBusy() && motor_back_right.isBusy())) {
+                (motor_front_left.isBusy() || motor_front_right.isBusy() ||
+                        motor_back_left.isBusy() || motor_back_right.isBusy())) {
 
             opMode.telemetry.addData("Target Inches", inches);
             opMode.telemetry.addData("Current FL Ticks", motor_front_left.getCurrentPosition());
@@ -369,5 +369,6 @@ public class Movement {
             setEncoderMode("RUN_USING_ENCODER");
         }
     }
+
 }
 
