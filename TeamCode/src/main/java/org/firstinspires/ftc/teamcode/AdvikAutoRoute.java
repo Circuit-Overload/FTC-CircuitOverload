@@ -45,6 +45,13 @@ public class AdvikAutoRoute extends LinearOpMode {
         intake.setPower(0.5);            
         drive.driveStraightInches(0.5, 48); 
         intake.stop();                      // stop intake once drive finishes
+        sleep(200);
+        drive.driveDiagonalInches(0.5, 45, 24);
+        sleep(200);
+        drive.turnDegreesIMU(0.5, 90, 3.0);
+
+
+
     }
 
     //Finished
