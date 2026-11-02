@@ -11,7 +11,7 @@ public class Movement {
     private final double TICKS_PER_REV = 537.7;     // Adjust for your specific motor (e.g., GoBILDA 19.2:1)
     private final double GEAR_RATIO = 1.0;          // 1.0 if wheels are mounted directly to the motor shaft
     private final double WHEEL_DIAMETER_INCHES = 4.094;
-    private final double TRACK_WIDTH_INCHES = 1.48;
+    private final double TRACK_WIDTH_INCHES = 16.2;
 
     private final double COUNTS_PER_INCH_STRAIGHT = (TICKS_PER_REV * GEAR_RATIO) / (WHEEL_DIAMETER_INCHES * Math.PI);
 
