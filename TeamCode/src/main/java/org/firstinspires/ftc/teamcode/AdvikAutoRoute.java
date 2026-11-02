@@ -27,12 +27,11 @@ public class AdvikAutoRoute extends LinearOpMode {
         if (opModeIsActive()) {
             path1();
         }
+    }
 
-        public void path1() {
-            shooter.fireForSeconds(1.5, 2.0);  
-            rotateForDegrees(-0.5, -90);
-        }
-
+    public void path1() {
+        shooter.fireForSeconds(1.5, 2.0);
+        drive.turnDegrees(-0.5, -90);
     }
 
 }
