@@ -2,6 +2,7 @@ package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 
+@com.qualcomm.robotcore.eventloop.opmode.Autonomous
 public class AdvikAutoRoute extends LinearOpMode {
 
     Movement drive;
@@ -28,7 +29,10 @@ public class AdvikAutoRoute extends LinearOpMode {
         }
 
         public void path1() {
-
+            shooter.fireForSeconds(1.5, 2.0);  
+            rotateForDegrees(-0.5, -90);
         }
 
     }
+
+}
