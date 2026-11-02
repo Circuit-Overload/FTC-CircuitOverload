@@ -10,8 +10,8 @@ public class Movement {
     // Switch all these values to ones on the motor
     private final double TICKS_PER_REV = 537.7;     // Adjust for your specific motor (e.g., GoBILDA 19.2:1)
     private final double GEAR_RATIO = 1.0;          // 1.0 if wheels are mounted directly to the motor shaft
-    private final double WHEEL_DIAMETER_INCHES = 3.77;
-    private final double TRACK_WIDTH_INCHES = 15.0;
+    private final double WHEEL_DIAMETER_INCHES = 4.094;
+    private final double TRACK_WIDTH_INCHES = 1.48;
 
     private final double COUNTS_PER_INCH_STRAIGHT = (TICKS_PER_REV * GEAR_RATIO) / (WHEEL_DIAMETER_INCHES * Math.PI);
 
@@ -35,9 +35,9 @@ public class Movement {
         motor_front_right = opMode.hardwareMap.get(DcMotor.class, frontRight);
         motor_back_right = opMode.hardwareMap.get(DcMotor.class, backRight);
 
-        // Right-side mecanum motors are mounted mirrored, so reverse them so that
-        // positive power drives the robot forward on all four wheels.
-        // If the robot drives backward, flip all four; if it spins, flip only the right side.
+        // Left-side motors are reversed and right-side motors are forward, so that
+        // positive power drives the robot forward on all four wheels on this robot.
+        // If the robot drives backward, flip all four; if it spins, flip only one side.
         motor_front_left.setDirection(DcMotor.Direction.REVERSE);
         motor_back_left.setDirection(DcMotor.Direction.REVERSE);
         motor_front_right.setDirection(DcMotor.Direction.FORWARD);
