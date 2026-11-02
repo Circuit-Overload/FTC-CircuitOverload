@@ -34,6 +34,14 @@ public class Movement {
         motor_back_left = opMode.hardwareMap.get(DcMotor.class, backLeft);
         motor_front_right = opMode.hardwareMap.get(DcMotor.class, frontRight);
         motor_back_right = opMode.hardwareMap.get(DcMotor.class, backRight);
+
+        // Right-side mecanum motors are mounted mirrored, so reverse them so that
+        // positive power drives the robot forward on all four wheels.
+        // If the robot drives backward, flip all four; if it spins, flip only the right side.
+        motor_front_left.setDirection(DcMotor.Direction.REVERSE);
+        motor_back_left.setDirection(DcMotor.Direction.REVERSE);
+        motor_front_right.setDirection(DcMotor.Direction.FORWARD);
+        motor_back_right.setDirection(DcMotor.Direction.FORWARD);
     }
 
     public void straight(double power) {
