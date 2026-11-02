@@ -1,8 +1,12 @@
 package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.IMU;
 import com.qualcomm.robotcore.util.ElapsedTime;
+import com.qualcomm.robotcore.util.Range;
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 
 public class Movement {
     private DcMotor motor_front_left, motor_front_right, motor_back_left, motor_back_right;
@@ -12,6 +16,8 @@ public class Movement {
     private final double GEAR_RATIO = 1.0;          // 1.0 if wheels are mounted directly to the motor shaft
     private final double WHEEL_DIAMETER_INCHES = 4.094;
     private final double TRACK_WIDTH_INCHES = 16.2;
+    private final double WHEELBASE_INCHES = 14.0;     // front-to-back wheel distance
+    private final double TURN_CALIBRATION = 1.0;      // tune: commanded / actual after a 360 deg test
 
     private final double COUNTS_PER_INCH_STRAIGHT = (TICKS_PER_REV * GEAR_RATIO) / (WHEEL_DIAMETER_INCHES * Math.PI);
 
@@ -23,6 +29,7 @@ public class Movement {
     private final double COUNTS_PER_INCH_STRAFE = COUNTS_PER_INCH_STRAIGHT * STRAFE_SLIP_MULTIPLIER;
 
     private LinearOpMode opMode;
+    private IMU imu;
     private ElapsedTime runtime = new ElapsedTime();
 
     public Movement(LinearOpMode opMode) {
@@ -42,6 +49,12 @@ public class Movement {
         motor_back_left.setDirection(DcMotor.Direction.REVERSE);
         motor_front_right.setDirection(DcMotor.Direction.FORWARD);
         motor_back_right.setDirection(DcMotor.Direction.FORWARD);
+
+        // IMU for turnDegreesIMU. Set LOGO/USB to how the hub is actually mounted.
+        imu = opMode.hardwareMap.get(IMU.class, "imu");
+        imu.initialize(new IMU.Parameters(new RevHubOrientationOnRobot(
+                RevHubOrientationOnRobot.LogoFacingDirection.UP,
+                RevHubOrientationOnRobot.UsbFacingDirection.FORWARD)));
     }
 
     public void straight(double power) {
@@ -197,9 +210,10 @@ public class Movement {
 
     public void turnDegrees(double power, double degrees) {
         if (opMode.opModeIsActive()) {
-            double turnCircumference = TRACK_WIDTH_INCHES * Math.PI;
-            double targetInches = (turnCircumference * degrees) / 360.0;
-            int targetTicks = (int) (targetInches * COUNTS_PER_INCH_STRAIGHT);
+            // Mecanum turn: wheel travel = angle (rad) * (track/2 + wheelbase/2)
+            double turnRadius = (TRACK_WIDTH_INCHES + WHEELBASE_INCHES) / 2.0;
+            double targetInches = Math.toRadians(degrees) * turnRadius * TURN_CALIBRATION;
+            int targetTicks = (int) Math.round(targetInches * COUNTS_PER_INCH_STRAIGHT);
 
             motor_front_left.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
             motor_back_left.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
@@ -237,6 +251,29 @@ public class Movement {
             motor_front_right.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
             motor_back_right.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         }
+    }
+
+    /**
+     * IMU-based turn. Same sign convention as turnDegrees: +degrees = clockwise,
+     * so turnDegreesIMU(0.5, -90, 2.0) turns left 90 degrees.
+     */
+    public void turnDegreesIMU(double maxPower, double degrees, double timeoutS) {
+        setEncoderMode("RUN_USING_ENCODER");
+        double start = imu.getRobotYawPitchRollAngles().getYaw(AngleUnit.DEGREES);
+        double target = start - degrees;
+        ElapsedTime t = new ElapsedTime();
+        while (opMode.opModeIsActive() && t.seconds() < timeoutS) {
+            double yaw = imu.getRobotYawPitchRollAngles().getYaw(AngleUnit.DEGREES);
+            double error = AngleUnit.normalizeDegrees(target - yaw);   // + means turn CCW
+            if (Math.abs(error) < 1.5) break;
+            double p = Range.clip(error * 0.02, -maxPower, maxPower);
+            if (Math.abs(p) < 0.12) p = Math.copySign(0.12, p);        // overcome static friction
+            turn(-p);                                                  // turn(+) spins clockwise
+            opMode.telemetry.addData("IMU Turn Target", target);
+            opMode.telemetry.addData("IMU Yaw", yaw);
+            opMode.telemetry.update();
+        }
+        stop();
     }
 
     public void strafeInches(double power, double inches) {
@@ -378,4 +415,6 @@ public class Movement {
         }
     }
 }
+
+
 
