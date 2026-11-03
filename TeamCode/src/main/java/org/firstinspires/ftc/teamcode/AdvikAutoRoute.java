@@ -30,6 +30,8 @@ public class AdvikAutoRoute extends LinearOpMode {
             path1();
             //Finished
             // path2();
+            // Finished
+            //path3();
         }
     }
 
@@ -67,28 +69,38 @@ public class AdvikAutoRoute extends LinearOpMode {
 
     //Finished
 
-
-
-    public void path3() {
-        shooter.fireForSeconds(1.5, 2.0);
-        sleep(200);
-        drive.driveStraightInches(-0.5, 7);
-        sleep(200);
-        drive.strafeInches(0.5, 15);
-        sleep(200);
-        drive.driveStraightInches(-0.5, 48);
-        sleep(200);
-        drive.strafeInches(0.5, 20);
-    }
-
-
-    public void path4() {
+    public void path2() {
 
         drive.strafeInches(0.5, -24);
         sleep(200);
         drive.driveStraightInches(0.5, 99);
         sleep(200);
         drive.strafeInches(0.5, -16);
+
+    }
+
+    // Finished
+
+    public void path3() {
+
+        shooter.fireForSeconds(1.5, 2.0);
+        drive.driveStraightInches(0.5, -5);
+        sleep(200);
+        drive.turnDegreesIMU(0.5, 90, 3.0);
+        sleep(200);
+        drive.strafeInches(0.5, -5);
+        intake.setPower(0.5);
+        drive.driveStraightInches(0.5, 48);
+        intake.stop();                     
+        drive.strafeInches(0.5, 2);
+        sleep(200);
+        drive.driveDiagonalInches(0.5, -45, -30.6);
+        sleep(200);
+        drive.turnDegreesIMU(0.5, 90, 3.0);
+        sleep(200);
+        drive.driveStraightInches(0.5, 72);
+        sleep(200);
+        drive.strafeInches(0.5, -20);
 
     }
 
