@@ -68,12 +68,13 @@ public class AdvikAutoRoute extends LinearOpMode {
     //Finished
 
     public void path2() {
-
-        drive.strafeInches(0.5, -24);
+        
+        shooter.fireForSeconds(1.5, 2.0);
+        drive.strafeInches(0.5, 24);
         sleep(200);
-        drive.driveStraightInches(0.5, 99);
+        drive.driveStraightInches(0.5, -99);
         sleep(200);
-        drive.strafeInches(0.5, -16);
+        drive.strafeInches(0.5, 16);
 
     }
 
@@ -103,5 +104,7 @@ public class AdvikAutoRoute extends LinearOpMode {
     }
 
 }
+
+
 
 
