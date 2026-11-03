@@ -13,9 +13,9 @@ public class Movement {
 
     // Switch all these values to ones on the motor
     private final double TICKS_PER_REV = 537.7;     // Adjust for your specific motor (e.g., GoBILDA 19.2:1)
-    private final double GEAR_RATIO = 1.0;          // 1.0 if wheels are mounted directly to the motor shaft
+    private final double GEAR_RATIO = 1.0;          // 1.0 if wheels are mounted directly to the qmotor shaft
     private final double WHEEL_DIAMETER_INCHES = 4.094;
-    private final double TRACK_WIDTH_INCHES = 16.2;
+    private final double TRACK_WIDTH_INCHES = 15.0;
     private final double WHEELBASE_INCHES = 14.0;     // front-to-back wheel distance
     private final double TURN_CALIBRATION = 1.0;      // tune: commanded / actual after a 360 deg test
 
