@@ -26,12 +26,10 @@ public class AdvikAutoRoute extends LinearOpMode {
 
         if (opModeIsActive()) {
 
-           //Finished
             path1();
-            //Finished
-            // path2();
-            // Finished
+            //path2();
             //path3();
+            //path4();
         }
     }
 
@@ -105,5 +103,6 @@ public class AdvikAutoRoute extends LinearOpMode {
     }
 
 }
+
 
 
