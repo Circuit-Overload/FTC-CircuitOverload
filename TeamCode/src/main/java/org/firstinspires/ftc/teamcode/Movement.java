@@ -28,7 +28,7 @@ public class Movement {
     // Conversion for strafing sideways
     private final double COUNTS_PER_INCH_STRAFE = COUNTS_PER_INCH_STRAIGHT * STRAFE_SLIP_MULTIPLIER;
 
-    private LinearOpMode opMode;
+    public LinearOpMode opMode;
     private IMU imu;
     private ElapsedTime runtime = new ElapsedTime();
 
