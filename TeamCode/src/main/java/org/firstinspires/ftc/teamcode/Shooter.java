@@ -3,10 +3,13 @@ package org.firstinspires.ftc.teamcode;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 public class Shooter {
     private DcMotorEx motor_shooter;
+
+    private Servo servo_shooter;
 
     // Shooter closed-loop velocity control constants
     // goBILDA Yellow Jacket encoder: 28 ticks per motor revolution
@@ -35,6 +38,20 @@ public class Shooter {
         // Use the built-in encoder so the hub regulates velocity (PIDF)
         motor_shooter.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         motor_shooter.setVelocityPIDFCoefficients(SHOOTER_P, SHOOTER_I, SHOOTER_D, SHOOTER_F);
+    }
+
+    public void hardwareMapServo(String servoName) {
+        // Maps the servo using the exact name configured in your Driver Hub
+        servo_shooter = opMode.hardwareMap.get(Servo.class, servoName);
+    }
+
+    public void servoSetPosition(double position) {
+        servo_shooter.setPosition(position);
+    }
+
+    // Optional: Reverse the servo direction if it moves the wrong way
+    public void servoSetDirection(Servo.Direction direction) {
+        servo_shooter.setDirection(direction);
     }
 
     public void setEnabled(boolean enabled) {
@@ -92,6 +109,10 @@ public class Shooter {
 
         stop();
     }
+    public void start(double power) {
+        motor_shooter.setPower(power);
+    }
+
 }
 
 
