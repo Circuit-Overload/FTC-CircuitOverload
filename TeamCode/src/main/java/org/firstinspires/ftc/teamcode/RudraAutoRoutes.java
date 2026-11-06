@@ -65,9 +65,7 @@ public class RudraAutoRoutes extends LinearOpMode {
 
     }
 
-    //Finished
-
-
+    //
 
     public void path3() {
         shooter.fireForSeconds(1.5, 2.0);

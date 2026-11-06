@@ -25,11 +25,13 @@ public class AdvikAutoRoute extends LinearOpMode {
         waitForStart();
 
         if (opModeIsActive()) {
-
-            path1();
+            //not working
+            //path1();
+            //working
             //path2();
+            //notworking
             //path3();
-            //path4();
+
         }
     }
 
@@ -50,6 +52,7 @@ public class AdvikAutoRoute extends LinearOpMode {
         sleep(200);
         drive.driveDiagonalInches(0.5, -45, -30.6);
         sleep(200);
+        //breaks right here
         drive.turnDegreesIMU(0.5, 90, 3.0);
         sleep(200);
         drive.driveStraightInches(0.5, 72);
@@ -95,6 +98,7 @@ public class AdvikAutoRoute extends LinearOpMode {
         sleep(200);
         drive.driveDiagonalInches(0.5, -45, -30.6);
         sleep(200);
+        //breaks here
         drive.turnDegreesIMU(0.5, 90, 3.0);
         sleep(200);
         drive.driveStraightInches(0.5, 72);
