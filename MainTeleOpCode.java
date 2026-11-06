@@ -196,7 +196,9 @@ public class MainTeleOpCode extends LinearOpMode {
             boolean shooterAtSpeed = shooterOn
                     && Math.abs(shooterActualRpm - SHOOTER_TARGET_RPM) <= SHOOTER_AT_SPEED_TOLERANCE_RPM;
 
-            telemetry.addData("Slow Mode (m1 toggle)", slowMode ? "ON (65%)" : "OFF (100%)");
+            if (slowMode) {
+                telemetry.addLine("*** SLOW MODE ON (65%) ***");
+            }
             telemetry.addData("Shooter Target RPM", shooterOn ? SHOOTER_TARGET_RPM : 0.0);
             telemetry.addData("Shooter Actual RPM", shooterActualRpm);
             telemetry.addData("Shooter ON (X toggle)", shooterOn);
