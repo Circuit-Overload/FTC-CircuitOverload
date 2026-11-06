@@ -8,6 +8,7 @@ public class AdvikAutoRoute extends LinearOpMode {
     Movement drive;
     Intake intake;
     Shooter shooter;
+    
 
     @Override
 
@@ -21,6 +22,7 @@ public class AdvikAutoRoute extends LinearOpMode {
         drive.hardwareMapMotors("motor_front_left", "motor_back_left", "motor_front_right", "motor_back_right");
         intake.hardwareMapMotor("motor_intake");
         shooter.hardwareMapShooters("motor_shooter");
+        shooter.hardwareMapServo("servo_intake");
 
         waitForStart();
 
@@ -38,16 +40,17 @@ public class AdvikAutoRoute extends LinearOpMode {
     //Finished
 
     public void path1() {
-    
-        shooter.fireForSeconds(1.5, 2.0);
+        shooter.start();
+        intake.setPower(0.5);
+        shooter.servoForSeconds(2.0);
         drive.driveStraightInches(0.5, -5);
         sleep(200);
         drive.turnDegreesIMU(0.5, 90, 3.0);
         sleep(200);
         drive.strafeInches(0.5, -5);
-        intake.setPower(0.5);
+        
         drive.driveStraightInches(0.5, 48);
-        intake.stop();                     
+                             
         drive.strafeInches(0.5, 2);
         sleep(200);
         drive.driveDiagonalInches(0.5, -45, -30.6);
@@ -61,10 +64,12 @@ public class AdvikAutoRoute extends LinearOpMode {
         sleep(200);
         drive.driveStraightInches(0.5, 26);
         sleep(200);
-        shooter.fireForSeconds(1.5, 2.0);
+        shooter.servoForSeconds(2.0);
         drive.driveStraightInches(0.5, -24);   
         sleep(200);
         drive.strafeInches(0.5, -44);
+        shooter.stop();
+        intake.stop();
 
     }
 

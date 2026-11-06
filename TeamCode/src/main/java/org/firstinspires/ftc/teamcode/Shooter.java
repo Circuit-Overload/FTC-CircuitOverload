@@ -11,6 +11,12 @@ public class Shooter {
 
     private Servo servo_shooter;
 
+    // Servo angles (degrees). Set SERVO_RANGE_DEGREES to your servo's full range
+    // (180 for standard servos, 300 for goBILDA torque/speed servos).
+    private final double SERVO_RANGE_DEGREES = 300.0;
+    private final double SERVO_ON_DEGREES = 50.0;
+    private final double SERVO_OFF_DEGREES = 5.0;
+
     // Shooter closed-loop velocity control constants
     // goBILDA Yellow Jacket encoder: 28 ticks per motor revolution
     private final double SHOOTER_TARGET_RPM = 2700.0;
@@ -43,6 +49,15 @@ public class Shooter {
     public void hardwareMapServo(String servoName) {
         // Maps the servo using the exact name configured in your Driver Hub
         servo_shooter = opMode.hardwareMap.get(Servo.class, servoName);
+        servoOn(); // default position
+    }
+
+    public void servoOn() {
+        servo_shooter.setPosition(SERVO_ON_DEGREES / SERVO_RANGE_DEGREES);
+    }
+
+    public void servoOff() {
+        servo_shooter.setPosition(SERVO_OFF_DEGREES / SERVO_RANGE_DEGREES);
     }
 
     public void servoSetPosition(double position) {
@@ -111,6 +126,15 @@ public class Shooter {
     }
     public void start(double power) {
         motor_shooter.setPower(power);
+    }
+    public void servoForSeconds (double durationSeconds) {
+        runtime.reset();
+        servoOff();
+        while (opMode.opModeIsActive() && runtime.seconds() < durationSeconds) {
+            opMode.telemetry.addData("Servo Status", "Off! Time left: %.2f", durationSeconds - runtime.seconds());
+            opMode.telemetry.update();
+        }
+        servoOn();
     }
 
 }
