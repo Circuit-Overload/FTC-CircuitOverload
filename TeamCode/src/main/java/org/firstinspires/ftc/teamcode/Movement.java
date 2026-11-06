@@ -400,62 +400,43 @@ public class Movement {
                 Math.max(Math.abs(bl), Math.abs(br))
         );
 
-        fl /= max;
-        fr /= max;
-        bl /= max;
-        br /= max;
+        if (max > 0) {
+            fl /= max;
+            fr /= max;
+            bl /= max;
+            br /= max;
+        }
 
-        // Calculate distance traveled by each wheel.
-        // Mecanum kinematics: forward and strafe components use different
-        // counts-per-inch (strafe has a slip multiplier), so they must be
-        // accumulated separately for each wheel.
-        double forwardSigned =
-                inches * forward * COUNTS_PER_INCH_STRAIGHT;
-
-        double strafeSigned =
-                inches * strafe * COUNTS_PER_INCH_STRAFE;
+        // Calculate signed travel components
+        double forwardSigned = inches * forward * COUNTS_PER_INCH_STRAIGHT;
+        double strafeSigned = inches * strafe * COUNTS_PER_INCH_STRAFE;
 
         // Calculate individual wheel encoder targets
-        int flTarget = (int) Math.round(
-                forwardSigned + strafeSigned
-        );
+        int flTarget = (int) Math.round(forwardSigned + strafeSigned);
+        int frTarget = (int) Math.round(forwardSigned - strafeSigned);
+        int blTarget = (int) Math.round(forwardSigned - strafeSigned);
+        int brTarget = (int) Math.round(forwardSigned + strafeSigned);
 
-        int frTarget = (int) Math.round(
-                forwardSigned - strafeSigned
-        );
-
-        int blTarget = (int) Math.round(
-                forwardSigned - strafeSigned
-        );
-
-        int brTarget = (int) Math.round(
-                forwardSigned + strafeSigned
-        );
-
-        // Reset encoders
+        // 1. Reset encoders
         setEncoderMode("STOP_AND_RESET_ENCODER");
 
-        // Set target positions
-        double minPower = 0.15;
+        // 2. Set target positions (CRITICAL: Must be done before RUN_TO_POSITION)
+        motor_front_left.setTargetPosition(flTarget);
+        motor_front_right.setTargetPosition(frTarget);
+        motor_back_left.setTargetPosition(blTarget);
+        motor_back_right.setTargetPosition(brTarget);
 
-        // Scale each motor's power, but enforce a minimum floor so no motor stalls out
+        // 3. Switch to RUN_TO_POSITION
+        setEncoderMode("RUN_TO_POSITION");
+
+        // 4. Apply power with a minimum floor to prevent static friction stalls
+        double minPower = 0.15;
         motor_front_left.setPower(Math.max(Math.abs(fl) * power, minPower));
         motor_front_right.setPower(Math.max(Math.abs(fr) * power, minPower));
         motor_back_left.setPower(Math.max(Math.abs(bl) * power, minPower));
         motor_back_right.setPower(Math.max(Math.abs(br) * power, minPower));
 
-        // Switch to RUN_TO_POSITION
-        setEncoderMode("RUN_TO_POSITION");
-
-        // Scale each motor's power by its normalized wheel factor so that motors
-        // with smaller targets run slower — keeping the robot on the intended angle.
-        // The normalized factors are always in [0, 1] so powers stay within range.
-        motor_front_left.setPower(Math.abs(fl) * power);
-        motor_front_right.setPower(Math.abs(fr) * power);
-        motor_back_left.setPower(Math.abs(bl) * power);
-        motor_back_right.setPower(Math.abs(br) * power);
-
-        // Wait for motors to finish
+        // Wait for motors to finish with a 10-second safety timeout
         long timeout = System.currentTimeMillis() + 10000;
 
         while (opMode.opModeIsActive()
@@ -469,20 +450,16 @@ public class Movement {
             opMode.telemetry.addData("Distance", inches);
 
             opMode.telemetry.addData("FL Target", flTarget);
-            opMode.telemetry.addData("FL Current",
-                    motor_front_left.getCurrentPosition());
+            opMode.telemetry.addData("FL Current", motor_front_left.getCurrentPosition());
 
             opMode.telemetry.addData("FR Target", frTarget);
-            opMode.telemetry.addData("FR Current",
-                    motor_front_right.getCurrentPosition());
+            opMode.telemetry.addData("FR Current", motor_front_right.getCurrentPosition());
 
             opMode.telemetry.addData("BL Target", blTarget);
-            opMode.telemetry.addData("BL Current",
-                    motor_back_left.getCurrentPosition());
+            opMode.telemetry.addData("BL Current", motor_back_left.getCurrentPosition());
 
             opMode.telemetry.addData("BR Target", brTarget);
-            opMode.telemetry.addData("BR Current",
-                    motor_back_right.getCurrentPosition());
+            opMode.telemetry.addData("BR Current", motor_back_right.getCurrentPosition());
 
             opMode.telemetry.update();
 
