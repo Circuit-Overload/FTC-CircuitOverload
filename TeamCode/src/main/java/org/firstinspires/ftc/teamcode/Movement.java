@@ -366,53 +366,139 @@ public class Movement {
      * @param inches Distance to travel
      */
     public void driveDiagonalInches(double power, double angle, double inches) {
-        if (opMode.opModeIsActive()) {
-            double radians = Math.toRadians(angle);
-            double forward = Math.cos(radians);
-            double strafe = Math.sin(radians);
 
-            // Factor in slip for diagonal/strafe movement
-            double effectiveInches = inches * ((Math.abs(strafe) > 0.1) ? STRAFE_SLIP_MULTIPLIER : 1.0);
-            int targetTicks = (int) (effectiveInches * COUNTS_PER_INCH_STRAIGHT);
+        if (!opMode.opModeIsActive()) return;
 
-            // Calculate individual motor target adjustments based on the vector
-            int flTarget = (int) (targetTicks * (forward + strafe));
-            int frTarget = (int) (targetTicks * (forward - strafe));
-            int blTarget = (int) (targetTicks * (forward - strafe));
-            int brTarget = (int) (targetTicks * (forward + strafe));
+        // Normalize inputs
+        power = Math.abs(power);
+        inches = Math.abs(inches);
+        angle = angle % 360;
 
-            setEncoderMode("STOP_AND_RESET_ENCODER");
+        if (power > 1.0) power = 1.0;
 
-            motor_front_left.setTargetPosition(flTarget);
-            motor_front_right.setTargetPosition(frTarget);
-            motor_back_left.setTargetPosition(blTarget);
-            motor_back_right.setTargetPosition(brTarget);
-
-            setEncoderMode("RUN_TO_POSITION");
-
-            double flPower = (forward + strafe) * Math.abs(power);
-            double frPower = (forward - strafe) * Math.abs(power);
-            double blPower = (forward - strafe) * Math.abs(power);
-            double brPower = (forward + strafe) * Math.abs(power);
-
-            motor_front_left.setPower(flPower);
-            motor_front_right.setPower(frPower);
-            motor_back_left.setPower(blPower);
-            motor_back_right.setPower(brPower);
-
-            while (opMode.opModeIsActive() &&
-                    (motor_front_left.isBusy() || motor_front_right.isBusy() ||
-                            motor_back_left.isBusy() || motor_back_right.isBusy())) {
-
-                opMode.telemetry.addData("Diagonal Angle", angle);
-                opMode.telemetry.addData("Target Ticks FL", flTarget);
-                opMode.telemetry.addData("Current FL", motor_front_left.getCurrentPosition());
-                opMode.telemetry.update();
-            }
-
+        if (power == 0 || inches == 0) {
             stop();
-            setEncoderMode("RUN_USING_ENCODER");
+            return;
         }
+
+        // Convert angle to radians
+        double radians = Math.toRadians(angle);
+
+        // Calculate robot movement vector
+        double forward = Math.cos(radians);
+        double strafe = Math.sin(radians);
+
+        // Calculate mecanum wheel factors
+        double fl = forward + strafe;
+        double fr = forward - strafe;
+        double bl = forward - strafe;
+        double br = forward + strafe;
+
+        // Normalize wheel factors
+        double max = Math.max(
+                Math.max(Math.abs(fl), Math.abs(fr)),
+                Math.max(Math.abs(bl), Math.abs(br))
+        );
+
+        fl /= max;
+        fr /= max;
+        bl /= max;
+        br /= max;
+
+        // Calculate distance traveled by each wheel.
+        // Mecanum kinematics: wheel travel is proportional
+        // to forward displacement +/- strafe displacement.
+
+        double forwardTicks =
+                inches * Math.abs(forward) * COUNTS_PER_INCH_STRAIGHT;
+
+        double strafeTicks =
+                inches * Math.abs(strafe) *
+                        COUNTS_PER_INCH_STRAIGHT *
+                        STRAFE_SLIP_MULTIPLIER;
+
+        double forwardSigned =
+                inches * forward * COUNTS_PER_INCH_STRAIGHT;
+
+        double strafeSigned =
+                inches * strafe *
+                        COUNTS_PER_INCH_STRAIGHT *
+                        STRAFE_SLIP_MULTIPLIER;
+
+        // Calculate individual wheel encoder targets
+        int flTarget = (int) Math.round(
+                forwardSigned + strafeSigned
+        );
+
+        int frTarget = (int) Math.round(
+                forwardSigned - strafeSigned
+        );
+
+        int blTarget = (int) Math.round(
+                forwardSigned - strafeSigned
+        );
+
+        int brTarget = (int) Math.round(
+                forwardSigned + strafeSigned
+        );
+
+        // Reset encoders
+        setEncoderMode("STOP_AND_RESET_ENCODER");
+
+        // Set target positions
+        motor_front_left.setTargetPosition(flTarget);
+        motor_front_right.setTargetPosition(frTarget);
+        motor_back_left.setTargetPosition(blTarget);
+        motor_back_right.setTargetPosition(brTarget);
+
+        // Switch to RUN_TO_POSITION
+        setEncoderMode("RUN_TO_POSITION");
+
+        // RUN_TO_POSITION uses positive power.
+        motor_front_left.setPower(power);
+        motor_front_right.setPower(power);
+        motor_back_left.setPower(power);
+        motor_back_right.setPower(power);
+
+        // Wait for motors to finish
+        long timeout = System.currentTimeMillis() + 10000;
+
+        while (opMode.opModeIsActive()
+                && (motor_front_left.isBusy()
+                || motor_front_right.isBusy()
+                || motor_back_left.isBusy()
+                || motor_back_right.isBusy())
+                && System.currentTimeMillis() < timeout) {
+
+            opMode.telemetry.addData("Angle", angle);
+            opMode.telemetry.addData("Distance", inches);
+
+            opMode.telemetry.addData("FL Target", flTarget);
+            opMode.telemetry.addData("FL Current",
+                    motor_front_left.getCurrentPosition());
+
+            opMode.telemetry.addData("FR Target", frTarget);
+            opMode.telemetry.addData("FR Current",
+                    motor_front_right.getCurrentPosition());
+
+            opMode.telemetry.addData("BL Target", blTarget);
+            opMode.telemetry.addData("BL Current",
+                    motor_back_left.getCurrentPosition());
+
+            opMode.telemetry.addData("BR Target", brTarget);
+            opMode.telemetry.addData("BR Current",
+                    motor_back_right.getCurrentPosition());
+
+            opMode.telemetry.update();
+
+            opMode.idle();
+        }
+
+        // Stop drivetrain
+        stop();
+
+        // Restore normal encoder mode
+        setEncoderMode("RUN_USING_ENCODER");
     }
 
 }
