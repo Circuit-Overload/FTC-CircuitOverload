@@ -198,6 +198,15 @@ public class MainTeleOpCode extends LinearOpMode {
 
             if (slowMode) {
                 telemetry.addLine("*** SLOW MODE ON (65%) ***");
+                telemetry.addData("Speed multiplier", speedMultiplier);
+                telemetry.addData("Acceleration", acceleration);
+                telemetry.addData("Left stick (x, y)", "%.2f, %.2f", gamepad1.left_stick_x, gamepad1.left_stick_y);
+                telemetry.addData("Right stick x", "%.2f", gamepad1.right_stick_x);
+                telemetry.addData("Motor power FL/FR", "%.2f / %.2f",
+                        motor_front_left.getPower(), motor_front_right.getPower());
+                telemetry.addData("Motor power BL/BR", "%.2f / %.2f",
+                        motor_back_left.getPower(), motor_back_right.getPower());
+                telemetry.addData("Intake ON (A toggle)", intakeOn);
             }
             telemetry.addData("Shooter Target RPM", shooterOn ? SHOOTER_TARGET_RPM : 0.0);
             telemetry.addData("Shooter Actual RPM", shooterActualRpm);
