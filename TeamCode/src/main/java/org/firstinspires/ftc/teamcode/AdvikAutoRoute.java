@@ -41,7 +41,7 @@ public class AdvikAutoRoute extends LinearOpMode {
 
     public void path1() {
 
-        shooter.start();
+        shooter.start(0.5);
         intake.setPower(0.5);
         shooter.servoForSeconds(2.0);
         drive.driveStraightInches(0.5, -5);
@@ -75,7 +75,7 @@ public class AdvikAutoRoute extends LinearOpMode {
 
     public void path2() {
         intake.setPower(0.5);
-        shooter.start();
+        shooter.start(0.5);
         shooter.servoForSeconds(2.0);
         drive.strafeInches(0.5, 24);
         sleep(200);
@@ -90,7 +90,7 @@ public class AdvikAutoRoute extends LinearOpMode {
 
     public void path3() {
         intake.setPower(0.5);
-        shooter.start();
+        shooter.start(0.5);
         shooter.servoForSeconds(2.0);
         drive.driveStraightInches(0.5, -5);
         sleep(200);

@@ -436,10 +436,13 @@ public class Movement {
         setEncoderMode("STOP_AND_RESET_ENCODER");
 
         // Set target positions
-        motor_front_left.setTargetPosition(flTarget);
-        motor_front_right.setTargetPosition(frTarget);
-        motor_back_left.setTargetPosition(blTarget);
-        motor_back_right.setTargetPosition(brTarget);
+        double minPower = 0.15;
+
+        // Scale each motor's power, but enforce a minimum floor so no motor stalls out
+        motor_front_left.setPower(Math.max(Math.abs(fl) * power, minPower));
+        motor_front_right.setPower(Math.max(Math.abs(fr) * power, minPower));
+        motor_back_left.setPower(Math.max(Math.abs(bl) * power, minPower));
+        motor_back_right.setPower(Math.max(Math.abs(br) * power, minPower));
 
         // Switch to RUN_TO_POSITION
         setEncoderMode("RUN_TO_POSITION");
