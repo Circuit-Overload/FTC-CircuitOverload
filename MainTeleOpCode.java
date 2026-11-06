@@ -49,6 +49,10 @@ public class MainTeleOpCode extends LinearOpMode {
     private boolean shooterOn = false;
     private boolean lastXState = false;
 
+    // Speed toggle: press left stick (L3 / m1) on gamepad1 to switch between full and 65% speed
+    private boolean slowMode = false;
+    private boolean lastM1State = false;
+
     // Servo Angle Scaling for a 300-degree servo (Valid range: 0.0 to 1.0)
     // Starts higher (~100 degrees) and moves down toward 90 degrees when button B is pressed
     private static final double SERVO_START_POS = 50.0 / 300.0;
@@ -115,20 +119,12 @@ public class MainTeleOpCode extends LinearOpMode {
             if (abs(left_x) <= 0.05) left_x = 0;
             if (abs(right_x) <= 0.05) right_x = 0;
 
-            // Precision drive on gamepad2: lower sensitivity, overrides gamepad1 drive while its sticks are moved
-            final double PRECISION_SCALE = 0.3;
-            double g2_y = -gamepad2.left_stick_y;
-            double g2_x = gamepad2.left_stick_x;
-            double g2_r = gamepad2.right_stick_x;
-            if (abs(g2_y) <= 0.05) g2_y = 0;
-            if (abs(g2_x) <= 0.05) g2_x = 0;
-            if (abs(g2_r) <= 0.05) g2_r = 0;
-            boolean gamepad1Moving = left_y != 0 || left_x != 0 || right_x != 0;
-            if (!gamepad1Moving && (g2_y != 0 || g2_x != 0 || g2_r != 0)) {
-                left_y = g2_y * PRECISION_SCALE;
-                left_x = g2_x * PRECISION_SCALE;
-                right_x = g2_r * PRECISION_SCALE;
+            // Speed toggle: left stick button (L3 / m1) on gamepad1 switches between 100% and 65% speed
+            boolean currentM1State = gamepad1.left_stick_button;
+            if (currentM1State && !lastM1State) {
+                slowMode = !slowMode;
             }
+            lastM1State = currentM1State;
 
             // Auto-Aim Assist: If Left Bumper is held and a blob is visible, override right_x to track the blob!
             if (gamepad1.left_bumper && targetValid) {
@@ -154,22 +150,23 @@ public class MainTeleOpCode extends LinearOpMode {
             }
 
             double acceleration = 0.75 + (gamepad1.right_trigger * 0.25);
+            double speedMultiplier = slowMode ? 0.65 : 1.0;
 
-            motor_front_left.setPower(flPower * acceleration);
-            motor_back_left.setPower(blPower * acceleration);
-            motor_front_right.setPower(frPower * acceleration);
-            motor_back_right.setPower(brPower * acceleration);
+            motor_front_left.setPower(flPower * acceleration * speedMultiplier);
+            motor_back_left.setPower(blPower * acceleration * speedMultiplier);
+            motor_front_right.setPower(frPower * acceleration * speedMultiplier);
+            motor_back_right.setPower(brPower * acceleration * speedMultiplier);
 
             // -------------------------------------------------------------
             // 3. INTAKE & SHOOTER MOTOR TOGGLES (Buttons A & X)
             // -------------------------------------------------------------
-            boolean currentAState = gamepad1.a || gamepad2.a;
+            boolean currentAState = gamepad2.a;
             if (currentAState && !lastAState) {
                 intakeOn = !intakeOn;
             }
             lastAState = currentAState;
 
-            boolean currentXState = gamepad1.x || gamepad2.x;
+            boolean currentXState = gamepad2.x;
             if (currentXState && !lastXState) {
                 shooterOn = !shooterOn;
             }
@@ -185,7 +182,7 @@ public class MainTeleOpCode extends LinearOpMode {
             // -------------------------------------------------------------
             // 4. SERVO POSITION CONTROL (Button B)
             // -------------------------------------------------------------
-            if (gamepad1.b || gamepad2.b) {
+            if (gamepad2.b) {
                 servo_intake.setPosition(SERVO_DOWN_POS);
             } else {
                 servo_intake.setPosition(SERVO_START_POS);
@@ -199,6 +196,7 @@ public class MainTeleOpCode extends LinearOpMode {
             boolean shooterAtSpeed = shooterOn
                     && Math.abs(shooterActualRpm - SHOOTER_TARGET_RPM) <= SHOOTER_AT_SPEED_TOLERANCE_RPM;
 
+            telemetry.addData("Slow Mode (m1 toggle)", slowMode ? "ON (65%)" : "OFF (100%)");
             telemetry.addData("Shooter Target RPM", shooterOn ? SHOOTER_TARGET_RPM : 0.0);
             telemetry.addData("Shooter Actual RPM", shooterActualRpm);
             telemetry.addData("Shooter ON (X toggle)", shooterOn);
