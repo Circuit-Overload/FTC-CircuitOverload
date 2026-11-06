@@ -23,19 +23,19 @@ public class MainTeleOpCode extends LinearOpMode {
 
     // Shooter closed-loop velocity control (holds RPM despite friction / battery sag)
     // goBILDA Yellow Jacket encoder: 28 ticks per motor revolution
-    private static final double SHOOTER_TARGET_RPM = 2700.0;
+    private static final double SHOOTER_TARGET_RPM = 2850.0;
     private static final double SHOOTER_TICKS_PER_REV = 28.0;
     private static final double SHOOTER_TARGET_TPS = SHOOTER_TARGET_RPM * SHOOTER_TICKS_PER_REV / 60.0; // = 1540
     // Shooter spins in the negative direction (same as the old setPower(-0.55))
-    private static final double SHOOTER_DIRECTION = -1.0;
+    private static final double SHOOTER_DIRECTION = 1.0;
 
     // Shooter velocity PIDF gains (tune on the robot, change ONE at a time)
     // F = 32767 / max free-spin ticks per second (about 13 for ~2520 TPS); P = push strength;
     // I = removes small steady error; D = damps overshoot (keep 0 unless P oscillates)
-    private static final double SHOOTER_P = 30.0;
+    private static final double SHOOTER_P = 29.0;
     private static final double SHOOTER_I = 0.0;
-    private static final double SHOOTER_D = 0.5;
-    private static final double SHOOTER_F = 14.5;
+    private static final double SHOOTER_D = 2.5;  //1.5
+    private static final double SHOOTER_F = 12.5;   //13
     /** RPM within this band of target counts as "at speed" for debug telemetry */
     private static final double SHOOTER_AT_SPEED_TOLERANCE_RPM = 150.0;
 
@@ -220,3 +220,4 @@ public class MainTeleOpCode extends LinearOpMode {
         }
     }
 }
+
