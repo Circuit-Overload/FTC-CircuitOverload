@@ -27,11 +27,11 @@ public class AdvikAutoRoute extends LinearOpMode {
         waitForStart();
 
         if (opModeIsActive()) {
-            //not working
+            //Working
             //path1();
             //working
             //path2();
-            //notworking
+            //Working
             //path3();
 
         }
@@ -40,6 +40,7 @@ public class AdvikAutoRoute extends LinearOpMode {
     //Finished
 
     public void path1() {
+
         shooter.start();
         intake.setPower(0.5);
         shooter.servoForSeconds(2.0);
@@ -47,15 +48,12 @@ public class AdvikAutoRoute extends LinearOpMode {
         sleep(200);
         drive.turnDegreesIMU(0.5, 90, 3.0);
         sleep(200);
-        drive.strafeInches(0.5, -5);
-        
-        drive.driveStraightInches(0.5, 48);
-                             
+        drive.strafeInches(0.5, -5);        
+        drive.driveStraightInches(0.5, 48);                             
         drive.strafeInches(0.5, 2);
         sleep(200);
         drive.driveDiagonalInches(0.5, -45, -30.6);
         sleep(200);
-        //breaks right here
         drive.turnDegreesIMU(0.5, 90, 3.0);
         sleep(200);
         drive.driveStraightInches(0.5, 72);
@@ -76,40 +74,42 @@ public class AdvikAutoRoute extends LinearOpMode {
     //Finished
 
     public void path2() {
-        
-        shooter.fireForSeconds(1.5, 2.0);
+        intake.setPower(0.5);
+        shooter.start();
+        shooter.servoForSeconds(2.0);
         drive.strafeInches(0.5, 24);
         sleep(200);
         drive.driveStraightInches(0.5, -99);
         sleep(200);
         drive.strafeInches(0.5, 16);
-
+        shooter.stop();
+        intake.stop();
     }
 
     // Finished
 
     public void path3() {
-
-        shooter.fireForSeconds(1.5, 2.0);
+        intake.setPower(0.5);
+        shooter.start();
+        shooter.servoForSeconds(2.0);
         drive.driveStraightInches(0.5, -5);
         sleep(200);
         drive.turnDegreesIMU(0.5, 90, 3.0);
         sleep(200);
         drive.strafeInches(0.5, -5);
-        intake.setPower(0.5);
-        drive.driveStraightInches(0.5, 48);
-        intake.stop();                     
+        drive.driveStraightInches(0.5, 48);                
         drive.strafeInches(0.5, 2);
         sleep(200);
         drive.driveDiagonalInches(0.5, -45, -30.6);
         sleep(200);
-        //breaks here
         drive.turnDegreesIMU(0.5, 90, 3.0);
         sleep(200);
         drive.driveStraightInches(0.5, 72);
         sleep(200);
         drive.strafeInches(0.5, -20);
-
+        shooter.stop();
+        intake.stop();
+        
     }
 
 }
