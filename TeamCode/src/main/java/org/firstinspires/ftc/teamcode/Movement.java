@@ -372,7 +372,7 @@ public class Movement {
         // Normalize inputs
         power = Math.abs(power);
         inches = Math.abs(inches);
-        angle = angle % 360;
+        angle = ((angle % 360) + 360) % 360;   // handles negative angles correctly
 
         if (power > 1.0) power = 1.0;
 
@@ -406,24 +406,14 @@ public class Movement {
         br /= max;
 
         // Calculate distance traveled by each wheel.
-        // Mecanum kinematics: wheel travel is proportional
-        // to forward displacement +/- strafe displacement.
-
-        double forwardTicks =
-                inches * Math.abs(forward) * COUNTS_PER_INCH_STRAIGHT;
-
-        double strafeTicks =
-                inches * Math.abs(strafe) *
-                        COUNTS_PER_INCH_STRAIGHT *
-                        STRAFE_SLIP_MULTIPLIER;
-
+        // Mecanum kinematics: forward and strafe components use different
+        // counts-per-inch (strafe has a slip multiplier), so they must be
+        // accumulated separately for each wheel.
         double forwardSigned =
                 inches * forward * COUNTS_PER_INCH_STRAIGHT;
 
         double strafeSigned =
-                inches * strafe *
-                        COUNTS_PER_INCH_STRAIGHT *
-                        STRAFE_SLIP_MULTIPLIER;
+                inches * strafe * COUNTS_PER_INCH_STRAFE;
 
         // Calculate individual wheel encoder targets
         int flTarget = (int) Math.round(
@@ -454,11 +444,13 @@ public class Movement {
         // Switch to RUN_TO_POSITION
         setEncoderMode("RUN_TO_POSITION");
 
-        // RUN_TO_POSITION uses positive power.
-        motor_front_left.setPower(power);
-        motor_front_right.setPower(power);
-        motor_back_left.setPower(power);
-        motor_back_right.setPower(power);
+        // Scale each motor's power by its normalized wheel factor so that motors
+        // with smaller targets run slower — keeping the robot on the intended angle.
+        // The normalized factors are always in [0, 1] so powers stay within range.
+        motor_front_left.setPower(Math.abs(fl) * power);
+        motor_front_right.setPower(Math.abs(fr) * power);
+        motor_back_left.setPower(Math.abs(bl) * power);
+        motor_back_right.setPower(Math.abs(br) * power);
 
         // Wait for motors to finish
         long timeout = System.currentTimeMillis() + 10000;
