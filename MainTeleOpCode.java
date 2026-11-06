@@ -49,7 +49,7 @@ public class MainTeleOpCode extends LinearOpMode {
     private boolean shooterOn = false;
     private boolean lastXState = false;
 
-    // Speed toggle: press left stick (L3 / m1) on gamepad1 to switch between full and 65% speed
+    // Speed toggle: press B on gamepad1 to switch between full and 65% speed
     private boolean slowMode = false;
     private boolean lastM1State = false;
 
@@ -119,8 +119,8 @@ public class MainTeleOpCode extends LinearOpMode {
             if (abs(left_x) <= 0.05) left_x = 0;
             if (abs(right_x) <= 0.05) right_x = 0;
 
-            // Speed toggle: left stick button (L3 / m1) on gamepad1 switches between 100% and 65% speed
-            boolean currentM1State = gamepad1.left_stick_button;
+            // Speed toggle: B button on gamepad1 switches between 100% and 65% speed
+            boolean currentM1State = gamepad1.b;
             if (currentM1State && !lastM1State) {
                 slowMode = !slowMode;
             }
