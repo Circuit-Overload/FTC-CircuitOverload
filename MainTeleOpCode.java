@@ -46,6 +46,9 @@ public class MainTeleOpCode extends LinearOpMode {
     private boolean intakeOn = false;
     private boolean lastIntakeButtonState = false;
 
+    private boolean intakeReverse = false;
+    private boolean lastReverseButtonState = false;
+
     private boolean shooterOn = false;
     private boolean lastShooterButtonState = false;
 
@@ -172,7 +175,14 @@ public class MainTeleOpCode extends LinearOpMode {
             }
             lastShooterButtonState = currentShooterButtonState;
 
-            motor_intake.setPower(intakeOn ? 0.667 : 0.0);
+            boolean currentReverseButtonState = gamepad2.dpad_left;
+            if (currentReverseButtonState && !lastReverseButtonState) {
+                intakeReverse = !intakeReverse;
+            }
+            lastReverseButtonState = currentReverseButtonState;
+
+            double intakePower = intakeOn ? 0.667 : 0.0;
+            motor_intake.setPower(intakeReverse ? -intakePower : intakePower);
             // Closed-loop: hold target RPM (SHOOTER_TARGET_RPM); hub compensates for load / battery sag
             motor_shooter.setVelocity(shooterOn ? SHOOTER_DIRECTION * SHOOTER_TARGET_TPS : 0.0);
 
@@ -209,6 +219,7 @@ public class MainTeleOpCode extends LinearOpMode {
                         motor_back_left.getPower(), motor_back_right.getPower());
                 telemetry.addData("Intake ON (Left Bumper toggle)", intakeOn);
             }
+            telemetry.addData("Intake REVERSE (Dpad Left toggle)", intakeReverse ? "ON" : "OFF");
             telemetry.addData("Shooter Target RPM", shooterOn ? SHOOTER_TARGET_RPM : 0.0);
             telemetry.addData("Shooter Actual RPM", shooterActualRpm);
             telemetry.addData("Shooter ON (Right Bumper toggle)", shooterOn);
