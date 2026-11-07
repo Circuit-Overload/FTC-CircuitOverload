@@ -19,16 +19,16 @@ public class Shooter {
 
     // Shooter closed-loop velocity control constants
     // goBILDA Yellow Jacket encoder: 28 ticks per motor revolution
-    private final double SHOOTER_TARGET_RPM = 2930.0;
+    private final double SHOOTER_TARGET_RPM = 2760.0;
     private final double SHOOTER_TICKS_PER_REV = 28.0;
     private final double SHOOTER_TARGET_TPS = (SHOOTER_TARGET_RPM * SHOOTER_TICKS_PER_REV) / 60.0; // ~1540 TPS
     private final double SHOOTER_DIRECTION = 1.0;
 
     // Shooter velocity PIDF gains
-    private final double SHOOTER_P = 29.0;
+    private final double SHOOTER_P = 32.0;
     private final double SHOOTER_I = 0.0;
     private final double SHOOTER_D = 2.5;
-    private final double SHOOTER_F = 12.5;
+    private final double SHOOTER_F = 15.0;
     private final double SHOOTER_AT_SPEED_TOLERANCE_RPM = 150.0;
 
     private final LinearOpMode opMode;
