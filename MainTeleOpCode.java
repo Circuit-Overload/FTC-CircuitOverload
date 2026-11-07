@@ -23,7 +23,7 @@ public class MainTeleOpCode extends LinearOpMode {
 
     // Shooter closed-loop velocity control (holds RPM despite friction / battery sag)
     // goBILDA Yellow Jacket encoder: 28 ticks per motor revolution
-    private static final double SHOOTER_TARGET_RPM = 2850.0;
+    private static final double SHOOTER_TARGET_RPM = 2940.0;
     private static final double SHOOTER_TICKS_PER_REV = 28.0;
     private static final double SHOOTER_TARGET_TPS = SHOOTER_TARGET_RPM * SHOOTER_TICKS_PER_REV / 60.0; // = 1540
     // Shooter spins in the negative direction (same as the old setPower(-0.55))
@@ -229,4 +229,3 @@ public class MainTeleOpCode extends LinearOpMode {
         }
     }
 }
-
