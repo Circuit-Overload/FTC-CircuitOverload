@@ -42,7 +42,7 @@ public class AutoRoute4 extends LinearOpMode {
         drive.turnDegreesIMU(0.5, 90, 3.0);
         sleep(200);
         drive.strafeInches(0.5, -8);
-        drive.turnDegreesIMU(0.5, -5, 3.0 );
+        //drive.turnDegreesIMU(0.5, -5, 3.0 );
         drive.driveStraightInches(0.5, 48);
         drive.driveStraightInches(0.5, -48);
         drive.strafeInches(0.5, 8);
