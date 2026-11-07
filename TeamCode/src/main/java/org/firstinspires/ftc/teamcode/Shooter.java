@@ -22,7 +22,7 @@ public class Shooter {
     private final double SHOOTER_TARGET_RPM = 2940.0;
     private final double SHOOTER_TICKS_PER_REV = 28.0;
     private final double SHOOTER_TARGET_TPS = (SHOOTER_TARGET_RPM * SHOOTER_TICKS_PER_REV) / 60.0; // ~1540 TPS
-    private final double SHOOTER_DIRECTION = -1.0;
+    private final double SHOOTER_DIRECTION = 1.0;
 
     // Shooter velocity PIDF gains
     private final double SHOOTER_P = 29.0;
