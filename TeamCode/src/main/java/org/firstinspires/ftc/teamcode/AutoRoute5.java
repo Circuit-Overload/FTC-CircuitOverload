@@ -35,9 +35,13 @@ public class AutoRoute5 extends LinearOpMode {
 
        public void path5() {
         sleep(15000);
+        shooter.waitUntilAtSpeed(3.0);
+        intake.setPower(1);
+        shooter.servoForSeconds(2.0);
         drive.driveStraightInches(0.5, -24);
         sleep(200);
         drive.strafeInches(0.5, -40);
+          
     }
 
 }
