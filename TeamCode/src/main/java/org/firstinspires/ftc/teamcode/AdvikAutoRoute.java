@@ -30,7 +30,7 @@ public class AdvikAutoRoute extends LinearOpMode {
             //Working
             //path1();
             //working
-            path2();
+            //path2();
             //Working
             //path3();
 
