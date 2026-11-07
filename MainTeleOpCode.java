@@ -1,243 +1,152 @@
 package org.firstinspires.ftc.teamcode;
 
-import static java.lang.Math.abs;
-
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
-import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.util.ElapsedTime;
 
-// Import the Limelight FTC library classes
-import com.qualcomm.hardware.limelightvision.Limelight3A;
-import com.qualcomm.hardware.limelightvision.LLResult;
-
-@TeleOp(name="TeleOp_Main", group="Linear OpMode")
-public class MainTeleOpCode extends LinearOpMode {
-
-    // Hardware Declarations
-    private DcMotor motor_front_left, motor_front_right, motor_back_left, motor_back_right;
-    private DcMotor motor_intake;
+public class Shooter {
     private DcMotorEx motor_shooter;
-    private Servo servo_intake;
 
-    // Shooter closed-loop velocity control (holds RPM despite friction / battery sag)
+    private Servo servo_shooter;
+
+    // Servo angles (degrees). Set SERVO_RANGE_DEGREES to your servo's full range
+    // (180 for standard servos, 300 for goBILDA torque/speed servos).
+    private final double SERVO_RANGE_DEGREES = 300.0;
+    private final double SERVO_ON_DEGREES = 50.0;
+    private final double SERVO_OFF_DEGREES = 5.0;
+
+    // Shooter closed-loop velocity control constants
     // goBILDA Yellow Jacket encoder: 28 ticks per motor revolution
-    private static final double SHOOTER_TARGET_RPM = 2940.0;
-    private static final double SHOOTER_TICKS_PER_REV = 28.0;
-    private static final double SHOOTER_TARGET_TPS = SHOOTER_TARGET_RPM * SHOOTER_TICKS_PER_REV / 60.0; // = 1540
-    // Shooter spins in the negative direction (same as the old setPower(-0.55))
-    private static final double SHOOTER_DIRECTION = 1.0;
+    private final double SHOOTER_TARGET_RPM = 2750.0;
+    private final double SHOOTER_TICKS_PER_REV = 28.0;
+    private final double SHOOTER_TARGET_TPS = (SHOOTER_TARGET_RPM * SHOOTER_TICKS_PER_REV) / 60.0; // ~1540 TPS
+    private final double SHOOTER_DIRECTION = 1.0;
 
-    // Shooter velocity PIDF gains (tune on the robot, change ONE at a time)
-    // F = 32767 / max free-spin ticks per second (about 13 for ~2520 TPS); P = push strength;
-    // I = removes small steady error; D = damps overshoot (keep 0 unless P oscillates)
-    private static final double SHOOTER_P = 29.0;
-    private static final double SHOOTER_I = 0.0;
-    private static final double SHOOTER_D = 2.5;  //1.5
-    private static final double SHOOTER_F = 12.5;   //13
-    /** RPM within this band of target counts as "at speed" for debug telemetry */
-    private static final double SHOOTER_AT_SPEED_TOLERANCE_RPM = 150.0;
+    // Shooter velocity PIDF gains
+    private final double SHOOTER_P = 30.0;
+    private final double SHOOTER_I = 0.0;
+    private final double SHOOTER_D = 2.5;
+    private final double SHOOTER_F = 15.0;
+    private final double SHOOTER_AT_SPEED_TOLERANCE_RPM = 150.0;
 
-    // Limelight Declaration
-    private Limelight3A limelight;
+    private final LinearOpMode opMode;
+    private final ElapsedTime runtime = new ElapsedTime();
 
-    // Toggle Tracking Variables (Must remain fields to persist across loop iterations)
-    private boolean intakeOn = false;
-    private boolean lastIntakeButtonState = false;
+    public Shooter(LinearOpMode opMode) {
+        this.opMode = opMode;
+    }
 
-    private boolean intakeReverse = false;
-    private boolean lastReverseButtonState = false;
+    public void hardwareMapShooters(String motorName) {
+        motor_shooter = opMode.hardwareMap.get(DcMotorEx.class, motorName);
 
-    private boolean shooterOn = false;
-    private boolean lastShooterButtonState = false;
-
-    // Speed toggle: press B on gamepad1 to switch between full and 65% speed
-    private boolean slowMode = false;
-    private boolean lastM1State = false;
-
-    // Servo Angle Scaling for a 300-degree servo (Valid range: 0.0 to 1.0)
-    // Starts higher (~100 degrees) and moves down toward 90 degrees when button B is pressed
-    private static final double SERVO_START_POS = 50.0 / 300.0;
-    private static final double SERVO_DOWN_POS  = 05.0 / 300.0;
-
-    @Override
-    public void runOpMode() {
-
-        // Hardware Mapping
-        motor_front_left = hardwareMap.get(DcMotor.class, "motor_front_left");
-        motor_back_left = hardwareMap.get(DcMotor.class, "motor_back_left");
-        motor_front_right = hardwareMap.get(DcMotor.class, "motor_front_right");
-        motor_back_right = hardwareMap.get(DcMotor.class, "motor_back_right");
-
-        motor_intake = hardwareMap.get(DcMotor.class, "motor_intake");
-        motor_shooter = hardwareMap.get(DcMotorEx.class, "motor_shooter");
-        // Use the built-in encoder so the hub regulates velocity (PIDF) instead of raw voltage
+        // Use the built-in encoder so the hub regulates velocity (PIDF)
         motor_shooter.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         motor_shooter.setVelocityPIDFCoefficients(SHOOTER_P, SHOOTER_I, SHOOTER_D, SHOOTER_F);
-        servo_intake = hardwareMap.get(Servo.class, "servo_intake");
+    }
 
-        // Map Limelight (ensure it matches the name configured in your Robot Controller config)
-        limelight = hardwareMap.get(Limelight3A.class, "limelight");
+    public void hardwareMapServo(String servoName) {
+        // Maps the servo using the exact name configured in your Driver Hub
+        servo_shooter = opMode.hardwareMap.get(Servo.class, servoName);
+        servoOn(); // default position
+    }
 
-        // Reverse left side motors so positive power drives forward
-        motor_front_left.setDirection(DcMotor.Direction.REVERSE);
-        motor_back_left.setDirection(DcMotor.Direction.REVERSE);
-        motor_front_right.setDirection(DcMotor.Direction.FORWARD);
-        motor_back_right.setDirection(DcMotor.Direction.FORWARD);
+    public void servoOn() {
+        servo_shooter.setPosition(SERVO_ON_DEGREES / SERVO_RANGE_DEGREES);
+    }
 
-        // Initialize and start the Limelight (Pipeline 0 is your color tracking pipeline)
-        limelight.setPollRateHz(100);
-        limelight.start();
-        limelight.pipelineSwitch(0);
+    public void servoOff() {
+        servo_shooter.setPosition(SERVO_OFF_DEGREES / SERVO_RANGE_DEGREES);
+    }
 
-        telemetry.addData("Status", "Initialized. Waiting for Start...");
-        telemetry.update();
+    public void servoSetPosition(double position) {
+        servo_shooter.setPosition(position);
+    }
 
-        waitForStart();
+    // Optional: Reverse the servo direction if it moves the wrong way
+    public void servoSetDirection(Servo.Direction direction) {
+        servo_shooter.setDirection(direction);
+    }
 
-        while (opModeIsActive()) {
-
-            // -------------------------------------------------------------
-            // 1. LIMELIGHT DATA POLLING
-            // -------------------------------------------------------------
-            LLResult result = limelight.getLatestResult();
-            boolean targetValid = false;
-            double tx = 0.0; // Horizontal offset from crosshair (-29.8 to 29.8 degrees)
-
-            if (result != null && result.isValid()) {
-                targetValid = true;
-                tx = result.getTx();
-            }
-
-            // -------------------------------------------------------------
-            // 2. STRAFE / DRIVE LOGIC WITH OPTIONAL BLOB AUTO-AIM (Hold Left Bumper)
-            // -------------------------------------------------------------
-            double left_y = -gamepad1.left_stick_y;
-            double left_x = gamepad1.left_stick_x;
-            double right_x = gamepad1.right_stick_x;
-
-            // Add deadzones
-            if (abs(left_y) <= 0.05) left_y = 0;
-            if (abs(left_x) <= 0.05) left_x = 0;
-            if (abs(right_x) <= 0.05) right_x = 0;
-
-            // Speed toggle: B button on gamepad1 switches between 100% and 65% speed
-            boolean currentM1State = gamepad1.b;
-            if (currentM1State && !lastM1State) {
-                slowMode = !slowMode;
-            }
-            lastM1State = currentM1State;
-
-            // Auto-Aim Assist: If Left Bumper is held and a blob is visible, override right_x to track the blob!
-            if (gamepad1.left_bumper && targetValid) {
-                double steerKp = 0.03; // Tweak this gain value based on how fast it turns
-                right_x = tx * steerKp;
-            }
-
-            // Calculate Mecanum powers
-            double flPower = left_y + left_x + right_x;
-            double blPower = left_y - left_x + right_x;
-            double frPower = left_y - left_x - right_x;
-            double brPower = left_y + left_x - right_x;
-
-            // Normalize powers if stick magnitude exceeds 1.0
-            double max = Math.max(-1.0,
-                    Math.max(abs(flPower), Math.max(abs(blPower),
-                            Math.max(abs(frPower), abs(brPower)))));
-            if (max > 1.0) {
-                flPower /= max;
-                blPower /= max;
-                frPower /= max;
-                brPower /= max;
-            }
-
-            double acceleration = 0.75 + (gamepad1.right_trigger * 0.25);
-            double speedMultiplier = slowMode ? 0.65 : 1.0;
-
-            motor_front_left.setPower(flPower * acceleration * speedMultiplier);
-            motor_back_left.setPower(blPower * acceleration * speedMultiplier);
-            motor_front_right.setPower(frPower * acceleration * speedMultiplier);
-            motor_back_right.setPower(brPower * acceleration * speedMultiplier);
-
-            // -------------------------------------------------------------
-            // 3. INTAKE & SHOOTER MOTOR TOGGLES (Left Bumper & Right Bumper)
-            // -------------------------------------------------------------
-            boolean currentIntakeButtonState = gamepad2.left_bumper;
-            if (currentIntakeButtonState && !lastIntakeButtonState) {
-                intakeOn = !intakeOn;
-            }
-            lastIntakeButtonState = currentIntakeButtonState;
-
-            boolean currentShooterButtonState = gamepad2.right_bumper;
-            if (currentShooterButtonState && !lastShooterButtonState) {
-                shooterOn = !shooterOn;
-            }
-            lastShooterButtonState = currentShooterButtonState;
-
-            boolean currentReverseButtonState = gamepad2.dpad_left;
-            if (currentReverseButtonState && !lastReverseButtonState) {
-                intakeReverse = !intakeReverse;
-            }
-            lastReverseButtonState = currentReverseButtonState;
-
-            double intakePower = intakeOn ? 0.667 : 0.0;
-            motor_intake.setPower(intakeReverse ? -intakePower : intakePower);
-            // Closed-loop: hold target RPM (SHOOTER_TARGET_RPM); hub compensates for load / battery sag
-            motor_shooter.setVelocity(shooterOn ? SHOOTER_DIRECTION * SHOOTER_TARGET_TPS : 0.0);
-
-            // Fixed power fallback (open loop): -55% when on
-            // motor_shooter.setPower(shooterOn ? -0.55 : 0.0);
-
-            // -------------------------------------------------------------
-            // 4. SERVO POSITION CONTROL (Hold Left Trigger or Right Trigger)
-            // -------------------------------------------------------------
-            boolean servoDownHeld = gamepad2.left_trigger > 0.5 || gamepad2.right_trigger > 0.5;
-            if (servoDownHeld) {
-                servo_intake.setPosition(SERVO_DOWN_POS);
-            } else {
-                servo_intake.setPosition(SERVO_START_POS);
-            }
-
-            // -------------------------------------------------------------
-            // 5. TELEMETRY DISPLAY (Debugging info for the Limelight)
-            // -------------------------------------------------------------
-            double shooterVelocityTps = motor_shooter.getVelocity();
-            double shooterActualRpm = Math.abs(shooterVelocityTps) * 60.0 / SHOOTER_TICKS_PER_REV;
-            boolean shooterAtSpeed = shooterOn
-                    && Math.abs(shooterActualRpm - SHOOTER_TARGET_RPM) <= SHOOTER_AT_SPEED_TOLERANCE_RPM;
-
-            if (slowMode) {
-                telemetry.addLine("*** SLOW MODE ON (65%) ***");
-                telemetry.addData("Speed multiplier", speedMultiplier);
-                telemetry.addData("Acceleration", acceleration);
-                telemetry.addData("Left stick (x, y)", "%.2f, %.2f", gamepad1.left_stick_x, gamepad1.left_stick_y);
-                telemetry.addData("Right stick x", "%.2f", gamepad1.right_stick_x);
-                telemetry.addData("Motor power FL/FR", "%.2f / %.2f",
-                        motor_front_left.getPower(), motor_front_right.getPower());
-                telemetry.addData("Motor power BL/BR", "%.2f / %.2f",
-                        motor_back_left.getPower(), motor_back_right.getPower());
-                telemetry.addData("Intake ON (Left Bumper toggle)", intakeOn);
-            }
-            telemetry.addData("Intake REVERSE (Dpad Left toggle)", intakeReverse ? "ON" : "OFF");
-            telemetry.addData("Shooter Target RPM", shooterOn ? SHOOTER_TARGET_RPM : 0.0);
-            telemetry.addData("Shooter Actual RPM", shooterActualRpm);
-            telemetry.addData("Shooter ON (Right Bumper toggle)", shooterOn);
-            telemetry.addData("Shooter at speed?", shooterAtSpeed);
-            telemetry.addData("Shooter encoder position", motor_shooter.getCurrentPosition());
-            telemetry.addData("Shooter velocity TPS (raw)", shooterVelocityTps);
-            telemetry.addData("Shooter commanded TPS", shooterOn ? SHOOTER_DIRECTION * SHOOTER_TARGET_TPS : 0.0);
-            if (shooterOn && shooterActualRpm < 50.0) {
-                telemetry.addLine("Shooter: encoder may be unplugged if position/RPM stay ~0");
-            }
-
-            telemetry.addData("Limelight Target Found", targetValid);
-            if (targetValid) {
-                telemetry.addData("Horizontal Offset (tx)", tx);
-                telemetry.addData("Vertical Offset (ty)", result.getTy());
-                telemetry.addData("Target Area (ta)", result.getTa());
-            }
-            telemetry.update();
+    public void setEnabled(boolean enabled) {
+        if (enabled) {
+            motor_shooter.setVelocity(SHOOTER_DIRECTION * SHOOTER_TARGET_TPS);
+        } else {
+            motor_shooter.setVelocity(0.0);
         }
     }
+
+    public void stop() {
+        motor_shooter.setVelocity(0.0);
+    }
+
+    public double getActualRpm() {
+        double velocityTps = motor_shooter.getVelocity();
+        return Math.abs(velocityTps) * 60.0 / SHOOTER_TICKS_PER_REV;
+    }
+
+    public boolean isAtSpeed() {
+        return Math.abs(getActualRpm() - SHOOTER_TARGET_RPM) <= SHOOTER_AT_SPEED_TOLERANCE_RPM;
+    }
+
+    /**
+     * Blocks execution in autonomous until the shooter reaches target speed or times out.
+     */
+    public boolean waitUntilAtSpeed(double timeoutSeconds) {
+        runtime.reset();
+        setEnabled(true);
+
+        while (opMode.opModeIsActive() && !isAtSpeed() && runtime.seconds() < timeoutSeconds) {
+            opMode.telemetry.addData("Shooter Status", "Spinning up... Actual RPM: %.1f", getActualRpm());
+            opMode.telemetry.update();
+        }
+
+        return isAtSpeed();
+    }
+
+    /**
+     * Spins up, waits until up to speed, runs for specified seconds, then shuts down.
+     */
+    public void fireForSeconds(double durationSeconds, double timeoutSeconds) {
+        boolean ready = waitUntilAtSpeed(timeoutSeconds);
+
+        if (!ready) {
+            opMode.telemetry.addData("Shooter Warning", "Timed out before reaching target RPM!");
+            opMode.telemetry.update();
+        }
+
+        runtime.reset();
+        while (opMode.opModeIsActive() && runtime.seconds() < durationSeconds) {
+            opMode.telemetry.addData("Shooter Status", "Firing! Time left: %.2f", durationSeconds - runtime.seconds());
+            opMode.telemetry.update();
+        }
+
+        stop();
+    }
+    public void start(double power) {
+        motor_shooter.setPower(power);
+    }
+    public void servoForSeconds (double durationSeconds) {
+        runtime.reset();
+        servoOff();
+        while (opMode.opModeIsActive() && runtime.seconds() < durationSeconds) {
+            opMode.telemetry.addData("Servo Status", "Off! Time left: %.2f", durationSeconds - runtime.seconds());
+            opMode.telemetry.update();
+        }
+        servoOn();
+    }
+
 }
+
+
+// Inside your OpMode's runOpMode():
+//Limelight vision = new Limelight(this);
+//vision.hardwareMapLimelight("limelight", 0); // "limelight" is the config name, 0 is your pipeline
+//
+// Inside your loop:
+//vision.addTelemetry();
+//if (vision.isTargetValid()) {
+//double tx = vision.getTx();
+// Do your auto-aiming or tracking logic here!
+//}
