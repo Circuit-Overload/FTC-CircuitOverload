@@ -54,7 +54,7 @@ public class AdvikAutoRoute extends LinearOpMode {
         drive.driveStraightInches(0.5, 48);
         drive.strafeInches(0.5, 2);
         sleep(200);
-        drive.driveStraightInches(0.5, -24);
+        drive.driveStraightInches(0.5, -20);
         sleep(200);
         drive.strafeInches(0.5, 24);
         sleep(200);
@@ -119,6 +119,5 @@ public class AdvikAutoRoute extends LinearOpMode {
     }
 
 }
-
 
 
