@@ -44,10 +44,10 @@ public class MainTeleOpCode extends LinearOpMode {
 
     // Toggle Tracking Variables (Must remain fields to persist across loop iterations)
     private boolean intakeOn = false;
-    private boolean lastAState = false;
+    private boolean lastIntakeButtonState = false;
 
     private boolean shooterOn = false;
-    private boolean lastXState = false;
+    private boolean lastShooterButtonState = false;
 
     // Speed toggle: press B on gamepad1 to switch between full and 65% speed
     private boolean slowMode = false;
@@ -158,19 +158,19 @@ public class MainTeleOpCode extends LinearOpMode {
             motor_back_right.setPower(brPower * acceleration * speedMultiplier);
 
             // -------------------------------------------------------------
-            // 3. INTAKE & SHOOTER MOTOR TOGGLES (Buttons A & X)
+            // 3. INTAKE & SHOOTER MOTOR TOGGLES (Left Bumper & Right Bumper)
             // -------------------------------------------------------------
-            boolean currentAState = gamepad2.a;
-            if (currentAState && !lastAState) {
+            boolean currentIntakeButtonState = gamepad2.left_bumper;
+            if (currentIntakeButtonState && !lastIntakeButtonState) {
                 intakeOn = !intakeOn;
             }
-            lastAState = currentAState;
+            lastIntakeButtonState = currentIntakeButtonState;
 
-            boolean currentXState = gamepad2.x;
-            if (currentXState && !lastXState) {
+            boolean currentShooterButtonState = gamepad2.right_bumper;
+            if (currentShooterButtonState && !lastShooterButtonState) {
                 shooterOn = !shooterOn;
             }
-            lastXState = currentXState;
+            lastShooterButtonState = currentShooterButtonState;
 
             motor_intake.setPower(intakeOn ? 0.667 : 0.0);
             // Closed-loop: hold target RPM (SHOOTER_TARGET_RPM); hub compensates for load / battery sag
@@ -180,9 +180,10 @@ public class MainTeleOpCode extends LinearOpMode {
             // motor_shooter.setPower(shooterOn ? -0.55 : 0.0);
 
             // -------------------------------------------------------------
-            // 4. SERVO POSITION CONTROL (Button B)
+            // 4. SERVO POSITION CONTROL (Hold Left Trigger or Right Trigger)
             // -------------------------------------------------------------
-            if (gamepad2.b) {
+            boolean servoDownHeld = gamepad2.left_trigger > 0.5 || gamepad2.right_trigger > 0.5;
+            if (servoDownHeld) {
                 servo_intake.setPosition(SERVO_DOWN_POS);
             } else {
                 servo_intake.setPosition(SERVO_START_POS);
@@ -206,11 +207,11 @@ public class MainTeleOpCode extends LinearOpMode {
                         motor_front_left.getPower(), motor_front_right.getPower());
                 telemetry.addData("Motor power BL/BR", "%.2f / %.2f",
                         motor_back_left.getPower(), motor_back_right.getPower());
-                telemetry.addData("Intake ON (A toggle)", intakeOn);
+                telemetry.addData("Intake ON (Left Bumper toggle)", intakeOn);
             }
             telemetry.addData("Shooter Target RPM", shooterOn ? SHOOTER_TARGET_RPM : 0.0);
             telemetry.addData("Shooter Actual RPM", shooterActualRpm);
-            telemetry.addData("Shooter ON (X toggle)", shooterOn);
+            telemetry.addData("Shooter ON (Right Bumper toggle)", shooterOn);
             telemetry.addData("Shooter at speed?", shooterAtSpeed);
             telemetry.addData("Shooter encoder position", motor_shooter.getCurrentPosition());
             telemetry.addData("Shooter velocity TPS (raw)", shooterVelocityTps);
