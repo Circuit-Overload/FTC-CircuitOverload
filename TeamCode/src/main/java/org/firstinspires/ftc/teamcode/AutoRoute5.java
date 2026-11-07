@@ -37,7 +37,7 @@ public class AutoRoute5 extends LinearOpMode {
         sleep(15000);
         drive.driveStraightInches(0.5, -24);
         sleep(200);
-        drive.strafeInches(0.5, -44);
+        drive.strafeInches(0.5, -40);
     }
 
 }
