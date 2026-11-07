@@ -36,7 +36,6 @@ public class AutoRoute4 extends LinearOpMode {
     public void path4() {
         shooter.waitUntilAtSpeed(3.0);
         intake.setPower(1);
-        sleep(3000);
         shooter.servoForSeconds(2.0);
         drive.driveStraightInches(0.5, -5);
         sleep(200);
