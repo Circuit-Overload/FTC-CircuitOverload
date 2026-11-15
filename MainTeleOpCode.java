@@ -58,9 +58,9 @@ public class MainTeleOpCode extends LinearOpMode {
     // private boolean isRedAlliance = true; // Default to Red side
 
     // Servo Angle Scaling for a 300-degree servo
-    private static final double SERVO_START_POS = 50.0 / 300.0;
-    private static final double SERVO_DOWN_POS  = 05.0 / 300.0;
-
+    private static final double SERVO_START_POS = 50.0 / 1800.0;
+    private static final double SERVO_DOWN_POS  = 05.0 / 1800.0;
+   
     @Override
     public void runOpMode() {
 
