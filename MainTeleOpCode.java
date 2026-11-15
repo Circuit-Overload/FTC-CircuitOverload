@@ -21,28 +21,26 @@ public class MainTeleOpCode extends LinearOpMode {
     private DcMotorEx motor_shooter;
     private Servo servo_intake;
 
+    // === NEW: Turret Motor Declaration (Commented out until ready) ===
+    // private DcMotor motor_turret;
+
     // Shooter closed-loop velocity control (holds RPM despite friction / battery sag)
-    // goBILDA Yellow Jacket encoder: 28 ticks per motor revolution
     private static final double SHOOTER_TARGET_RPM = 2750.0;
     private static final double SHOOTER_TICKS_PER_REV = 28.0;
-    private static final double SHOOTER_TARGET_TPS = SHOOTER_TARGET_RPM * SHOOTER_TICKS_PER_REV / 60.0; // = 1540
-    // Shooter spins in the negative direction (same as the old setPower(-0.55))
+    private static final double SHOOTER_TARGET_TPS = SHOOTER_TARGET_RPM * SHOOTER_TICKS_PER_REV / 60.0; 
     private static final double SHOOTER_DIRECTION = 1.0;
 
-    // Shooter velocity PIDF gains (tune on the robot, change ONE at a time)
-    // F = 32767 / max free-spin ticks per second (about 13 for ~2520 TPS); P = push strength;
-    // I = removes small steady error; D = damps overshoot (keep 0 unless P oscillates)
+    // Shooter velocity PIDF gains
     private static final double SHOOTER_P = 30.0;
     private static final double SHOOTER_I = 0.0;
-    private static final double SHOOTER_D = 2.5;  //1.5
-    private static final double SHOOTER_F = 15.0;   //13
-    /** RPM within this band of target counts as "at speed" for debug telemetry */
+    private static final double SHOOTER_D = 2.5;  
+    private static final double SHOOTER_F = 15.0;   
     private static final double SHOOTER_AT_SPEED_TOLERANCE_RPM = 150.0;
 
     // Limelight Declaration
     private Limelight3A limelight;
 
-    // Toggle Tracking Variables (Must remain fields to persist across loop iterations)
+    // Toggle Tracking Variables
     private boolean intakeOn = false;
     private boolean lastIntakeButtonState = false;
 
@@ -56,8 +54,10 @@ public class MainTeleOpCode extends LinearOpMode {
     private boolean slowMode = false;
     private boolean lastM1State = false;
 
-    // Servo Angle Scaling for a 300-degree servo (Valid range: 0.0 to 1.0)
-    // Starts higher (~100 degrees) and moves down toward 90 degrees when button B is pressed
+    // === NEW: Alliance Selection Variables for AprilTag Turret (Commented out) ===
+    // private boolean isRedAlliance = true; // Default to Red side
+
+    // Servo Angle Scaling for a 300-degree servo
     private static final double SERVO_START_POS = 50.0 / 300.0;
     private static final double SERVO_DOWN_POS  = 05.0 / 300.0;
 
@@ -72,12 +72,16 @@ public class MainTeleOpCode extends LinearOpMode {
 
         motor_intake = hardwareMap.get(DcMotor.class, "motor_intake");
         motor_shooter = hardwareMap.get(DcMotorEx.class, "motor_shooter");
-        // Use the built-in encoder so the hub regulates velocity (PIDF) instead of raw voltage
         motor_shooter.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         motor_shooter.setVelocityPIDFCoefficients(SHOOTER_P, SHOOTER_I, SHOOTER_D, SHOOTER_F);
         servo_intake = hardwareMap.get(Servo.class, "servo_intake");
 
-        // Map Limelight (ensure it matches the name configured in your Robot Controller config)
+        // === NEW: Turret Motor Mapping (Commented out) ===
+        // motor_turret = hardwareMap.get(DcMotor.class, "motor_turret");
+        // motor_turret.setDirection(DcMotor.Direction.FORWARD);
+        // motor_turret.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+
+        // Map Limelight
         limelight = hardwareMap.get(Limelight3A.class, "limelight");
 
         // Reverse left side motors so positive power drives forward
@@ -103,7 +107,7 @@ public class MainTeleOpCode extends LinearOpMode {
             // -------------------------------------------------------------
             LLResult result = limelight.getLatestResult();
             boolean targetValid = false;
-            double tx = 0.0; // Horizontal offset from crosshair (-29.8 to 29.8 degrees)
+            double tx = 0.0; 
 
             if (result != null && result.isValid()) {
                 targetValid = true;
@@ -117,31 +121,26 @@ public class MainTeleOpCode extends LinearOpMode {
             double left_x = gamepad1.left_stick_x;
             double right_x = gamepad1.right_stick_x;
 
-            // Add deadzones
             if (abs(left_y) <= 0.05) left_y = 0;
             if (abs(left_x) <= 0.05) left_x = 0;
             if (abs(right_x) <= 0.05) right_x = 0;
 
-            // Speed toggle: B button on gamepad1 switches between 100% and 65% speed
             boolean currentM1State = gamepad1.b;
             if (currentM1State && !lastM1State) {
                 slowMode = !slowMode;
             }
             lastM1State = currentM1State;
 
-            // Auto-Aim Assist: If Left Bumper is held and a blob is visible, override right_x to track the blob!
             if (gamepad1.left_bumper && targetValid) {
-                double steerKp = 0.03; // Tweak this gain value based on how fast it turns
+                double steerKp = 0.03; 
                 right_x = tx * steerKp;
             }
 
-            // Calculate Mecanum powers
             double flPower = left_y + left_x + right_x;
             double blPower = left_y - left_x + right_x;
             double frPower = left_y - left_x - right_x;
             double brPower = left_y + left_x - right_x;
 
-            // Normalize powers if stick magnitude exceeds 1.0
             double max = Math.max(-1.0,
                     Math.max(abs(flPower), Math.max(abs(blPower),
                             Math.max(abs(frPower), abs(brPower)))));
@@ -156,12 +155,12 @@ public class MainTeleOpCode extends LinearOpMode {
             double speedMultiplier = slowMode ? 0.65 : 1.0;
 
             motor_front_left.setPower(flPower * acceleration * speedMultiplier);
-            motor_back_left.setPower(blPower * acceleration * speedMultiplier);
             motor_front_right.setPower(frPower * acceleration * speedMultiplier);
+            motor_back_left.setPower(blPower * acceleration * speedMultiplier);
             motor_back_right.setPower(brPower * acceleration * speedMultiplier);
 
             // -------------------------------------------------------------
-            // 3. INTAKE & SHOOTER MOTOR TOGGLES (Left Bumper & Right Bumper)
+            // 3. INTAKE & SHOOTER MOTOR TOGGLES
             // -------------------------------------------------------------
             boolean currentIntakeButtonState = gamepad2.left_bumper;
             if (currentIntakeButtonState && !lastIntakeButtonState) {
@@ -183,14 +182,10 @@ public class MainTeleOpCode extends LinearOpMode {
 
             double intakePower = intakeOn ? 0.667 : 0.0;
             motor_intake.setPower(intakeReverse ? -intakePower : intakePower);
-            // Closed-loop: hold target RPM (SHOOTER_TARGET_RPM); hub compensates for load / battery sag
             motor_shooter.setVelocity(shooterOn ? SHOOTER_DIRECTION * SHOOTER_TARGET_TPS : 0.0);
 
-            // Fixed power fallback (open loop): -55% when on
-            // motor_shooter.setPower(shooterOn ? -0.55 : 0.0);
-
             // -------------------------------------------------------------
-            // 4. SERVO POSITION CONTROL (Hold Left Trigger or Right Trigger)
+            // 4. SERVO POSITION CONTROL
             // -------------------------------------------------------------
             boolean servoDownHeld = gamepad2.left_trigger > 0.5 || gamepad2.right_trigger > 0.5;
             if (servoDownHeld) {
@@ -199,8 +194,53 @@ public class MainTeleOpCode extends LinearOpMode {
                 servo_intake.setPosition(SERVO_START_POS);
             }
 
+            // =============================================================
+            // 5. NEW: APRILTAG TURRET SEARCH & LOCK-ON LOGIC (Commented Out)
+            // =============================================================
+            /*
+            // Switch Limelight to AprilTag pipeline if needed (e.g. Pipeline 1)
+            // limelight.pipelineSwitch(1);
+
+            // Select Alliance via Gamepad 2 (X = Blue, B = Red)
+            if (gamepad2.x) {
+                isRedAlliance = false;
+            } else if (gamepad2.b) {
+                isRedAlliance = true;
+            }
+
+            boolean correctTagFound = false;
+            long detectedId = -1;
+            double tagTx = 0.0;
+
+            if (result != null && result.isValid()) {
+                detectedId = result.getFiducialID(); // Gets AprilTag ID number
+                tagTx = result.getTx();
+
+                // Differentiate Red vs Blue tag ID ranges (Update numbers per your manual)
+                if (isRedAlliance && detectedId >= 1 && detectedId <= 5) {
+                    correctTagFound = true; // Red alliance tag found
+                } else if (!isRedAlliance && detectedId >= 6 && detectedId <= 10) {
+                    correctTagFound = true; // Blue alliance tag found
+                }
+            }
+
+            double turretPower = 0.0;
+            if (correctTagFound) {
+                // Lock-on Proportional Control
+                double turretKp = 0.025;
+                turretPower = tagTx * turretKp;
+                if (turretPower > 0 && turretPower < 0.08) turretPower = 0.08;
+                if (turretPower < 0 && turretPower > -0.08) turretPower = -0.08;
+            } else {
+                // Search Mode: Spin in circles looking for the right alliance tag
+                turretPower = 0.3;
+            }
+
+            // motor_turret.setPower(turretPower);
+            */
+
             // -------------------------------------------------------------
-            // 5. TELEMETRY DISPLAY (Debugging info for the Limelight)
+            // 6. TELEMETRY DISPLAY
             // -------------------------------------------------------------
             double shooterVelocityTps = motor_shooter.getVelocity();
             double shooterActualRpm = Math.abs(shooterVelocityTps) * 60.0 / SHOOTER_TICKS_PER_REV;
@@ -209,28 +249,7 @@ public class MainTeleOpCode extends LinearOpMode {
 
             if (slowMode) {
                 telemetry.addLine("*** SLOW MODE ON (65%) ***");
-                telemetry.addData("Speed multiplier", speedMultiplier);
-                telemetry.addData("Acceleration", acceleration);
-                telemetry.addData("Left stick (x, y)", "%.2f, %.2f", gamepad1.left_stick_x, gamepad1.left_stick_y);
-                telemetry.addData("Right stick x", "%.2f", gamepad1.right_stick_x);
-                telemetry.addData("Motor power FL/FR", "%.2f / %.2f",
-                        motor_front_left.getPower(), motor_front_right.getPower());
-                telemetry.addData("Motor power BL/BR", "%.2f / %.2f",
-                        motor_back_left.getPower(), motor_back_right.getPower());
-                telemetry.addData("Intake ON (Left Bumper toggle)", intakeOn);
             }
-            telemetry.addData("Intake REVERSE (Dpad Left toggle)", intakeReverse ? "ON" : "OFF");
-            telemetry.addData("Shooter Target RPM", shooterOn ? SHOOTER_TARGET_RPM : 0.0);
-            telemetry.addData("Shooter Actual RPM", shooterActualRpm);
-            telemetry.addData("Shooter ON (Right Bumper toggle)", shooterOn);
-            telemetry.addData("Shooter at speed?", shooterAtSpeed);
-            telemetry.addData("Shooter encoder position", motor_shooter.getCurrentPosition());
-            telemetry.addData("Shooter velocity TPS (raw)", shooterVelocityTps);
-            telemetry.addData("Shooter commanded TPS", shooterOn ? SHOOTER_DIRECTION * SHOOTER_TARGET_TPS : 0.0);
-            if (shooterOn && shooterActualRpm < 50.0) {
-                telemetry.addLine("Shooter: encoder may be unplugged if position/RPM stay ~0");
-            }
-
             telemetry.addData("Limelight Target Found", targetValid);
             if (targetValid) {
                 telemetry.addData("Horizontal Offset (tx)", tx);
