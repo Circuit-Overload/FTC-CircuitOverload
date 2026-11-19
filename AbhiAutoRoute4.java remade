@@ -1,0 +1,66 @@
+/* 
+
+package org.firstinspires.ftc.teamcode;
+
+import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+
+@com.qualcomm.robotcore.eventloop.opmode.Autonomous
+public class AutoRoute4 extends LinearOpMode {
+
+    Movement drive;
+    Intake intake;
+    Shooter shooter;
+
+    @Override
+    public void runOpMode() {
+        // Initialize mechanism helper classes
+        drive = new Movement(this);
+        intake = new Intake(this);
+        shooter = new Shooter(this);
+
+        // Hardware mapping
+        drive.hardwareMapMotors("motor_front_left", "motor_back_left", "motor_front_right", "motor_back_right");
+        intake.hardwareMapMotor("motor_intake");
+        shooter.hardwareMapShooters("motor_shooter");
+        shooter.hardwareMapServo("servo_intake");
+
+        waitForStart();
+
+        if (opModeIsActive()) {
+            path4();
+        }
+    }
+
+    public void path4() {
+        // Tune these inch distances on your field mat to match exact spacing
+        double forwardInches = 12.0;
+        double leftStrafeInches = -12.0; // Negative strafes left in strafeInches()
+        double backIntakeInches = -24.0;
+        double smallForwardInches = 8.0;
+        double returnBackInches = -(forwardInches + backIntakeInches + smallForwardInches);
+
+        // 1. Move forward
+        drive.driveStraightInches(0.5, forwardInches);
+        sleep(200);
+
+        // 2. Strafe left
+        drive.strafeInches(0.5, leftStrafeInches);
+        sleep(200);
+
+        // 3. Drive backward while intaking all game pieces
+        intake.setPower(1.0);
+        drive.driveStraightInches(0.5, backIntakeInches);
+        sleep(200);
+
+        // 4. Move forward a bit
+        drive.driveStraightInches(0.5, smallForwardInches);
+        sleep(200);
+
+        // 5. Return back to the starting line/position
+        drive.driveStraightInches(0.5, returnBackInches);
+        intake.stop();
+        shooter.stop();
+    }
+}     
+
+*/
