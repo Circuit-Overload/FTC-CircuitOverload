@@ -1,0 +1,76 @@
+/*
+
+public void path5() {
+        // Start spinning up shooter early so it reaches target RPM by scoring time
+        shooter.waitUntilAtSpeed(3.0);
+
+        // 1. Strafe right to align with a right-side game piece lane
+        drive.strafeInches(0.5, 14.0);
+        sleep(200);
+
+        // 2. Drive forward while intaking
+        intake.setPower(1.0);
+        drive.driveStraightInches(0.5, 28.0);
+        sleep(200);
+        intake.stop();
+
+        // 3. Return toward the shooting zone and fire
+        drive.driveStraightInches(0.5, -20.0);
+        drive.strafeInches(0.5, -14.0);
+        shooter.servoForSeconds(2.0);
+
+        // Clean stop
+        shooter.stop();
+        intake.stop();
+    }
+
+    public void path6() {
+        // 1. First pass: strafe left and intake forward
+        drive.strafeInches(0.5, -10.0);
+        intake.setPower(1.0);
+        drive.driveStraightInches(0.5, 24.0);
+        sleep(200);
+
+        // 2. Second pass: strafe right across and intake backward
+        drive.strafeInches(0.5, 20.0);
+        drive.driveStraightInches(0.5, -24.0);
+        intake.stop();
+        sleep(200);
+
+        // 3. Center up, wait for shooter speed, and fire
+        drive.strafeInches(0.5, -10.0);
+        shooter.waitUntilAtSpeed(3.0);
+        shooter.servoForSeconds(2.0);
+
+        // Clean stop
+        shooter.stop();
+        intake.stop();
+    }
+
+    public void path7() {
+        // 1. Pre-load shot: get shooter up to speed and fire right from start
+        shooter.waitUntilAtSpeed(3.0);
+        shooter.servoForSeconds(2.0);
+        shooter.stop();
+
+        // 2. Shift left and drive forward while intaking
+        drive.strafeInches(0.5, -10.0);
+        intake.setPower(1.0);
+        drive.driveStraightInches(0.5, 22.0);
+        sleep(200);
+        intake.stop();
+
+        // 3. Pull back and re-center near the starting line
+        drive.driveStraightInches(0.5, -22.0);
+        drive.strafeInches(0.5, 10.0);
+        sleep(200);
+
+        // 4. Spin up and fire collected pieces
+        shooter.waitUntilAtSpeed(3.0);
+        shooter.servoForSeconds(2.0);
+        shooter.stop();
+        intake.stop();
+    }
+
+
+*/
