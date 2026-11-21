@@ -8,7 +8,7 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 
 public class Limelight {
     private Limelight3A limelight;
-    private final LinearOpMode opMode;
+    public final LinearOpMode opMode;
 
     public Limelight(LinearOpMode opMode) {
         this.opMode = opMode;
@@ -23,6 +23,8 @@ public class Limelight {
         limelight.setPollRateHz(100);
         limelight.start();
         limelight.pipelineSwitch(pipelineIndex);
+        // PIPELINE INDEX 8 IS APRIL TAGS
+        // PIPELINE INDEX 9 IS COLOR BLOB
     }
 
     /**
@@ -80,6 +82,16 @@ public class Limelight {
      * Adds Limelight diagnostic telemetry to the driver hub.
      */
     public void addTelemetry() {
+        boolean valid = isTargetValid();
+        opMode.telemetry.addData("Limelight Target Found", valid);
+        if (valid) {
+            opMode.telemetry.addData("Horizontal Offset (tx)", getTx());
+            opMode.telemetry.addData("Vertical Offset (ty)", getTy());
+            opMode.telemetry.addData("Target Area (ta)", getTa());
+        }
+    }
+
+    public void printTelemetry() {
         boolean valid = isTargetValid();
         opMode.telemetry.addData("Limelight Target Found", valid);
         if (valid) {
