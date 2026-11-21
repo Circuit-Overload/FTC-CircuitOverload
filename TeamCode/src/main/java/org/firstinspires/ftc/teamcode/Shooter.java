@@ -5,17 +5,26 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
+import com.qualcomm.robotcore.util.Range;
 
 public class Shooter {
     private DcMotorEx motor_shooter;
+    private Servo gate_shooter;
+    private Servo servo_turret;
 
-    private Servo servo_shooter;
-
-    // Servo angles (degrees). Set SERVO_RANGE_DEGREES to your servo's full range
+    // Feeder/indexer servo angles (degrees). Set SERVO_RANGE_DEGREES to your servo's full range
     // (180 for standard servos, 300 for goBILDA torque/speed servos).
     private final double SERVO_RANGE_DEGREES = 300.0;
     private final double SERVO_ON_DEGREES = 50.0;
     private final double SERVO_OFF_DEGREES = 5.0;
+
+    // Turret servo angles (degrees). Assumes a 300-degree goBILDA servo centered at 150.0.
+    // Adjust MIN and MAX to match your robot's physical turret hard stops!
+    private final double TURRET_RANGE_DEGREES = 300.0;
+    private final double TURRET_CENTER_DEGREES = 150.0;
+    private final double TURRET_MIN_DEGREES = 60.0;
+    private final double TURRET_MAX_DEGREES = 240.0;
+    private double currentTurretDegrees = TURRET_CENTER_DEGREES;
 
     // Shooter closed-loop velocity control constants
     // goBILDA Yellow Jacket encoder: 28 ticks per motor revolution
@@ -46,28 +55,82 @@ public class Shooter {
         motor_shooter.setVelocityPIDFCoefficients(SHOOTER_P, SHOOTER_I, SHOOTER_D, SHOOTER_F);
     }
 
-    public void hardwareMapServo(String servoName) {
-        // Maps the servo using the exact name configured in your Driver Hub
-        servo_shooter = opMode.hardwareMap.get(Servo.class, servoName);
-        servoOn(); // default position
+    public void hardwareMapGate(String servoName) {
+        // Maps the feeder servo using the exact name configured in your Driver Hub
+        gate_shooter = opMode.hardwareMap.get(Servo.class, servoName);
+        gateOn(); // default position
     }
 
-    public void servoOn() {
-        servo_shooter.setPosition(SERVO_ON_DEGREES / SERVO_RANGE_DEGREES);
+    public void hardwareMapTurret(String turretServoName) {
+        // Maps the turret servo using the exact name configured in your Driver Hub
+        servo_turret = opMode.hardwareMap.get(Servo.class, turretServoName);
+        centerTurret(); // default to straight ahead
     }
 
-    public void servoOff() {
-        servo_shooter.setPosition(SERVO_OFF_DEGREES / SERVO_RANGE_DEGREES);
+    // --- Feeder Servo Methods ---
+
+    public void gateOn() {
+        gate_shooter.setPosition(SERVO_ON_DEGREES / SERVO_RANGE_DEGREES);
     }
 
-    public void servoSetPosition(double position) {
-        servo_shooter.setPosition(position);
+    public void gateOff() {
+        gate_shooter.setPosition(SERVO_OFF_DEGREES / SERVO_RANGE_DEGREES);
     }
 
-    // Optional: Reverse the servo direction if it moves the wrong way
-    public void servoSetDirection(Servo.Direction direction) {
-        servo_shooter.setDirection(direction);
+    public void gateSetPosition(double position) {
+        gate_shooter.setPosition(position);
     }
+
+    public void gateSetDirection(Servo.Direction direction) {
+        gate_shooter.setDirection(direction);
+    }
+
+    public void gateForSeconds(double durationSeconds) {
+        runtime.reset();
+        gateOff();
+        while (opMode.opModeIsActive() && runtime.seconds() < durationSeconds) {
+            opMode.telemetry.addData("Servo Status", "Off! Time left: %.2f", durationSeconds - runtime.seconds());
+            opMode.telemetry.update();
+        }
+        gateOn();
+    }
+
+    // --- Turret Servo Methods ---
+
+    /**
+     * Moves the turret to a specific angle in degrees, clamped within safe mechanical limits.
+     */
+    public void setTurretAngleDegrees(double angleDegrees) {
+        if (servo_turret == null) return;
+        currentTurretDegrees = Range.clip(angleDegrees, TURRET_MIN_DEGREES, TURRET_MAX_DEGREES);
+        servo_turret.setPosition(currentTurretDegrees / TURRET_RANGE_DEGREES);
+    }
+
+    /**
+     * Adjusts the turret angle relative to its current position (useful for Limelight tx tracking).
+     */
+    public void adjustTurretAngleDegrees(double deltaDegrees) {
+        setTurretAngleDegrees(currentTurretDegrees + deltaDegrees);
+    }
+
+    /**
+     * Centers the turret to its straight-ahead position.
+     */
+    public void centerTurret() {
+        setTurretAngleDegrees(TURRET_CENTER_DEGREES);
+    }
+
+    public double getTurretAngleDegrees() {
+        return currentTurretDegrees;
+    }
+
+    public void turretSetDirection(Servo.Direction direction) {
+        if (servo_turret != null) {
+            servo_turret.setDirection(direction);
+        }
+    }
+
+    // --- Shooter Motor Methods ---
 
     public void setEnabled(boolean enabled) {
         if (enabled) {
@@ -77,7 +140,7 @@ public class Shooter {
         }
     }
 
-    public void stop() {
+    public void shooterStop() {
         motor_shooter.setVelocity(0.0);
     }
 
@@ -122,31 +185,10 @@ public class Shooter {
             opMode.telemetry.update();
         }
 
-        stop();
+        shooterStop();
     }
-    public void start(double power) {
+
+    public void shooterStart(double power) {
         motor_shooter.setPower(power);
     }
-    public void servoForSeconds (double durationSeconds) {
-        runtime.reset();
-        servoOff();
-        while (opMode.opModeIsActive() && runtime.seconds() < durationSeconds) {
-            opMode.telemetry.addData("Servo Status", "Off! Time left: %.2f", durationSeconds - runtime.seconds());
-            opMode.telemetry.update();
-        }
-        servoOn();
-    }
-
 }
-
-
-// Inside your OpMode's runOpMode():
-//Limelight vision = new Limelight(this);
-//vision.hardwareMapLimelight("limelight", 0); // "limelight" is the config name, 0 is your pipeline
-//
-// Inside your loop:
-//vision.addTelemetry();
-//if (vision.isTargetValid()) {
-//double tx = vision.getTx();
-// Do your auto-aiming or tracking logic here!
-//}

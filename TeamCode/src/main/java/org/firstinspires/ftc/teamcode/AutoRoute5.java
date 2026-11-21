@@ -22,7 +22,7 @@ public class AutoRoute5 extends LinearOpMode {
         drive.hardwareMapMotors("motor_front_left", "motor_back_left", "motor_front_right", "motor_back_right");
         intake.hardwareMapMotor("motor_intake");
         shooter.hardwareMapShooters("motor_shooter");
-        shooter.hardwareMapServo("servo_intake");
+        shooter.hardwareMapGate("servo_intake");
 
         waitForStart();
 
@@ -37,11 +37,11 @@ public class AutoRoute5 extends LinearOpMode {
         sleep(15000);
         shooter.waitUntilAtSpeed(3.0);
         intake.setPower(1);
-        shooter.servoForSeconds(2.0);
+        shooter.gateForSeconds(2.0);
         drive.driveStraightInches(0.5, -24);
         sleep(200);
         drive.strafeInches(0.5, -40);
-        shooter.stop();
+        shooter.shooterStop();
         intake.stop();
           
     }

@@ -22,7 +22,7 @@ public class AutoRoute1 extends LinearOpMode {
         drive.hardwareMapMotors("motor_front_left", "motor_back_left", "motor_front_right", "motor_back_right");
         intake.hardwareMapMotor("motor_intake");
         shooter.hardwareMapShooters("motor_shooter");
-        shooter.hardwareMapServo("servo_intake");
+        shooter.hardwareMapGate("servo_intake");
 
         waitForStart();
 
@@ -36,7 +36,7 @@ public class AutoRoute1 extends LinearOpMode {
 
         shooter.waitUntilAtSpeed(3.0);
         intake.setPower(0.5);
-        shooter.servoForSeconds(2.0);
+        shooter.gateForSeconds(2.0);
         drive.driveStraightInches(0.5, -5);
         sleep(200);
         drive.turnDegreesIMU(0.5, 90, 3.0);
@@ -58,10 +58,10 @@ public class AutoRoute1 extends LinearOpMode {
         sleep(200);
         drive.driveStraightInches(0.5, 26);
         sleep(200);
-        shooter.servoForSeconds(2.0);
+        shooter.gateForSeconds(2.0);
         drive.driveStraightInches(0.5, -24);
         drive.strafeInches(0.5, -44);
-        shooter.stop();
+        shooter.shooterStop();
         intake.stop();
 
     }

@@ -25,7 +25,7 @@ public class LimelightTest extends LinearOpMode {
             movement = new Movement(limelight.opMode); // Adjust if your Movement constructor differs
         }
 
-        telemetry.addData("Status", "Limelight Initialized. Ready to start.");
+        telemetry.addData("Status", "Limelight Initialized. Ready to shooterStart.");
         telemetry.update();
 
         waitForStart();
