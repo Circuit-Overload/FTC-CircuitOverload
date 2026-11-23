@@ -7,48 +7,43 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 public class LimelightTest extends LinearOpMode {
 
     private Limelight limelight;
-    // Set to true ONLY when the robot is on blocks/floor and safe to spin wheels
-    private static final boolean TEST_MOVEMENT = false;
+    private Shooter shooter;
+
+    // Set to true if the Limelight is mounted ON the turret; false if mounted on the chassis
+    private static final boolean CAMERA_ON_TURRET = true;
 
     @Override
     public void runOpMode() {
-        // 1. Initialize your Limelight helper class
         limelight = new Limelight(this);
+        shooter = new Shooter(this);
 
-        // Make sure "limelight" matches your Robot Configuration name
-        // and 0 matches your AprilTag pipeline slot
+        // 1. Hardware map BOTH the Limelight and the turret servo
         limelight.hardwareMapLimelight("limelight", 0);
+        shooter.hardwareMapTurret("turret_servo"); // Match your Robot Config name!
 
-        // Optional: Initialize Movement only if testing alignment motors
-        Movement movement = null;
-        if (TEST_MOVEMENT) {
-            movement = new Movement(limelight.opMode); // Adjust if your Movement constructor differs
-        }
-
-        telemetry.addData("Status", "Limelight Initialized. Ready to shooterStart.");
+        telemetry.addData("Status", "Initialized. Turret centered.");
         telemetry.update();
 
         waitForStart();
 
-        // 2. Continuously read and display AprilTag data while running
         while (opModeIsActive()) {
-            // Calls your addTelemetry() method (shows Valid, tx, ty, ta)
             limelight.addTelemetry();
 
-            // Example of testing individual getter methods
             if (limelight.isTargetValid()) {
                 double tx = limelight.getTx();
-                telemetry.addData("Alignment Direction", tx > 0 ? "Turn Right" : "Turn Left");
 
-                // Optional: Run alignToTarget once if movement testing is enabled
-                if (TEST_MOVEMENT && movement != null) {
-                    boolean aligned = limelight.alignToTarget(movement);
-                    telemetry.addData("Aligned?", aligned);
-                    telemetry.update();
-                    break; // Stop after testing alignment once
+                if (CAMERA_ON_TURRET) {
+                    // Camera moves with turret: nudge turret slightly each loop until tx == 0
+                    if (Math.abs(tx) > 1.5) {
+                        shooter.adjustTurretAngleDegrees(tx * 0.15); // Flip sign (-tx) if it turns away!
+                    }
+                } else {
+                    // Camera is fixed on chassis: point directly to (Center + tx)
+                    shooter.setTurretAngleDegrees(150.0 + tx); // Flip to (150.0 - tx) if reversed!
                 }
             }
 
+            telemetry.addData("Turret Angle (deg)", shooter.getTurretAngleDegrees());
             telemetry.update();
         }
     }

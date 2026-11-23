@@ -1,3 +1,7 @@
+// WORKS IN PERSON
+
+
+
 package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
@@ -54,7 +58,7 @@ public class AutoRoute4 extends LinearOpMode {
         sleep(200);
         drive.driveStraightInches(0.5, -99);
         sleep(200);
-        drive.strafeInches(0.5, 16);
+        drive.strafeInches(0.5, 20);
         shooter.shooterStop();
         intake.stop();
 
