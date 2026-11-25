@@ -42,13 +42,17 @@ public class Movement {
         motor_front_right = opMode.hardwareMap.get(DcMotor.class, frontRight);
         motor_back_right = opMode.hardwareMap.get(DcMotor.class, backRight);
 
-        // Left-side motors are reversed and right-side motors are forward, so that
-        // positive power drives the robot forward on all four wheels on this robot.
-        // If the robot drives backward, flip all four; if it spins, flip only one side.
-        motor_front_left.setDirection(DcMotor.Direction.REVERSE);
-        motor_back_left.setDirection(DcMotor.Direction.REVERSE);
-        motor_front_right.setDirection(DcMotor.Direction.FORWARD);
-        motor_back_right.setDirection(DcMotor.Direction.FORWARD);
+        // Left-side motors are forward and right-side motors are reversed on this robot.
+        motor_front_left.setDirection(DcMotor.Direction.FORWARD);
+        motor_back_left.setDirection(DcMotor.Direction.FORWARD);
+        motor_front_right.setDirection(DcMotor.Direction.REVERSE);
+        motor_back_right.setDirection(DcMotor.Direction.REVERSE);
+
+        // Brake mode stops coasting/shimmying when motor power is set to 0
+        motor_front_left.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        motor_back_left.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        motor_front_right.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        motor_back_right.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
         // IMU for turnDegreesIMU. Set LOGO/USB to how the hub is actually mounted.
         imu = opMode.hardwareMap.get(IMU.class, "imu");
@@ -254,24 +258,54 @@ public class Movement {
     }
 
     /**
-     * IMU-based turn. Same sign convention as turnDegrees: +degrees = clockwise,
-     * so turnDegreesIMU(0.5, -90, 2.0) turns left 90 degrees.
+     * IMU-based turn with smooth taper and brake stop to prevent end-of-turn shimmy.
      */
     public void turnDegreesIMU(double maxPower, double degrees, double timeoutS) {
         setEncoderMode("RUN_USING_ENCODER");
         double start = imu.getRobotYawPitchRollAngles().getYaw(AngleUnit.DEGREES);
-        double target = start - degrees;
+        double target = AngleUnit.normalizeDegrees(start - degrees);
+
+        double kp = 0.009;
+        double kd = 0.005;
+        double prevError = AngleUnit.normalizeDegrees(target - start);
+        int onTargetCount = 0;
+
         ElapsedTime t = new ElapsedTime();
+        ElapsedTime loopTimer = new ElapsedTime();
+
         while (opMode.opModeIsActive() && t.seconds() < timeoutS) {
+            double dt = Math.max(loopTimer.seconds(), 0.005);
+            loopTimer.reset();
+
             double yaw = imu.getRobotYawPitchRollAngles().getYaw(AngleUnit.DEGREES);
-            double error = AngleUnit.normalizeDegrees(target - yaw);   // + means turn CCW
-            if (Math.abs(error) < 1.5) break;
-            double p = Range.clip(error * 0.02, -maxPower, maxPower);
-            if (Math.abs(p) < 0.12) p = Math.copySign(0.12, p);        // overcome static friction
-            turn(-p);                                                  // turn(+) spins clockwise
-            opMode.telemetry.addData("IMU Turn Target", target);
-            opMode.telemetry.addData("IMU Yaw", yaw);
+            double error = AngleUnit.normalizeDegrees(target - yaw);
+            double dError = (error - prevError) / dt;
+            prevError = error;
+
+            if (Math.abs(error) < 2.5) {
+                stop();
+                onTargetCount++;
+                if (onTargetCount >= 3) break;
+                opMode.idle();
+                continue;
+            } else {
+                onTargetCount = 0;
+            }
+
+            double p = Range.clip((error * kp) + (dError * kd), -maxPower, maxPower);
+
+            // Only apply static-friction floor when still well outside the target window
+            if (Math.abs(error) >= 10.0 && Math.abs(p) < 0.12) {
+                p = Math.copySign(0.12, p);
+            }
+
+            turn(p);
+
+            opMode.telemetry.addData("IMU Turn Target", "%.1f", target);
+            opMode.telemetry.addData("IMU Yaw", "%.1f", yaw);
+            opMode.telemetry.addData("Error", "%.1f", error);
             opMode.telemetry.update();
+            opMode.idle();
         }
         stop();
     }
@@ -318,6 +352,7 @@ public class Movement {
             motor_back_right.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         }
     }
+
     public void diagonalForSeconds(double power, double angle, double seconds) {
         runtime.reset();
 
@@ -472,7 +507,11 @@ public class Movement {
         // Restore normal encoder mode
         setEncoderMode("RUN_USING_ENCODER");
     }
+    public void turnLeft() {
+        turnDegrees(0.4, -80);
+    }
+
+    public void turnRight() {
+        turnDegrees(0.4, 80);
+    }
 }
-
-
-
